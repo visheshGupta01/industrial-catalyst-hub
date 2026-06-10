@@ -43,7 +43,7 @@ export const Route = createFileRoute("/products/$id")({
 });
 
 function ProductDetail() {
-  const { product } = Route.useLoaderData();
+  const { product } = Route.useLoaderData() as { product: NonNullable<ReturnType<typeof getProduct>> };
   const [tab, setTab] = useState<"description" | "specifications" | "features">("description");
   const [qty, setQty] = useState(1);
 
