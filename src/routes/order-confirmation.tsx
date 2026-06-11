@@ -35,6 +35,9 @@ function Confirmation() {
 
   return (
     <SiteLayout>
+      <div className="container-page pt-8">
+        <CheckoutStepper steps={CHECKOUT_STEPS} current={5} />
+      </div>
       <section className="border-b border-border bg-surface">
         <div className="container-page py-16">
           <div className="flex flex-col items-center text-center">
