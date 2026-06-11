@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CheckCircle2, Truck, FileText, ArrowRight, Package } from "lucide-react";
+import { CheckCircle2, Truck, FileText, ArrowRight, Package, MapPin } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
+import { CheckoutStepper, CHECKOUT_STEPS } from "@/components/site/CheckoutStepper";
 import { formatUSD } from "@/lib/format";
 import { z } from "zod";
 import { useEffect, useState } from "react";
