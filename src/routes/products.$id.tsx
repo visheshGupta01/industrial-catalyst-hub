@@ -1,13 +1,12 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useState } from "react";
-import { Download, ShoppingCart, FileText, Minus, Plus, ShieldCheck, Truck, Award } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Download, ShoppingCart, FileText, Minus, Plus, ShieldCheck, Truck, Award, Phone, Zap, Settings, BadgeCheck } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { ProductImage } from "@/components/site/ProductImage";
 import { ProductCard } from "@/components/site/ProductCard";
 import { getProduct, products } from "@/lib/mock-data";
 import { formatUSD } from "@/lib/format";
-import { cartStore } from "@/lib/cart-store";
-import { toast } from "sonner";
+import { cartStore, useRecentlyViewed } from "@/lib/cart-store";
 
 export const Route = createFileRoute("/products/$id")({
   loader: ({ params }) => {
@@ -42,12 +41,30 @@ export const Route = createFileRoute("/products/$id")({
   component: ProductDetail,
 });
 
+const FEATURE_ICONS = [Zap, Settings, ShieldCheck, BadgeCheck];
+
 function ProductDetail() {
   const { product } = Route.useLoaderData() as { product: NonNullable<ReturnType<typeof getProduct>> };
   const [tab, setTab] = useState<"description" | "specifications" | "features">("description");
   const [qty, setQty] = useState(1);
+  const [activeImg, setActiveImg] = useState(0);
+  const [zoom, setZoom] = useState<{ x: number; y: number } | null>(null);
+  const recent = useRecentlyViewed();
+
+  useEffect(() => {
+    cartStore.trackView(product.id);
+    setActiveImg(0);
+    setQty(1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [product.id]);
 
   const related = products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
+  const recentProducts = recent
+    .filter((id) => id !== product.id)
+    .map((id) => products.find((p) => p.id === id))
+    .filter(Boolean)
+    .slice(0, 4) as typeof products;
+
   const inStock = product.status !== "Out of Stock";
 
   return (
@@ -69,12 +86,35 @@ function ProductDetail() {
         <div className="grid gap-10 lg:grid-cols-2">
           {/* Gallery */}
           <div>
-            <div className="border border-border bg-card">
-              <ProductImage image={product.image} className="aspect-square" />
+            <div
+              className="group relative overflow-hidden border border-border bg-card"
+              onMouseMove={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                setZoom({
+                  x: ((e.clientX - rect.left) / rect.width) * 100,
+                  y: ((e.clientY - rect.top) / rect.height) * 100,
+                });
+              }}
+              onMouseLeave={() => setZoom(null)}
+            >
+              <div
+                className="transition-transform duration-200 ease-out"
+                style={zoom ? { transform: `scale(2)`, transformOrigin: `${zoom.x}% ${zoom.y}%` } : undefined}
+              >
+                <ProductImage image={product.image} className="aspect-square" />
+              </div>
+              <span className="pointer-events-none absolute bottom-3 right-3 hidden bg-background/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground md:block">
+                Hover to zoom
+              </span>
             </div>
             <div className="mt-3 grid grid-cols-4 gap-3">
               {[0, 1, 2, 3].map((i) => (
-                <button key={i} className={`border bg-card transition-colors ${i === 0 ? "border-primary" : "border-border hover:border-primary"}`}>
+                <button
+                  key={i}
+                  onClick={() => setActiveImg(i)}
+                  className={`border bg-card transition-colors ${activeImg === i ? "border-primary" : "border-border hover:border-primary"}`}
+                  aria-label={`View image ${i + 1}`}
+                >
                   <ProductImage image={product.image} className="aspect-square scale-90" />
                 </button>
               ))}
@@ -83,14 +123,14 @@ function ProductDetail() {
 
           {/* Detail panel */}
           <div>
-            <div className="flex items-center gap-3 text-[11px] uppercase tracking-wider">
+            <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-wider">
               <span className="bg-primary/10 px-2 py-1 font-semibold text-primary">{product.category}</span>
               <span className="font-mono text-muted-foreground">SKU · {product.code}</span>
             </div>
             <h1 className="mt-4 text-3xl font-bold leading-tight md:text-4xl">{product.name}</h1>
             <p className="mt-3 text-base text-muted-foreground">{product.shortDescription}</p>
 
-            <div className="mt-6 flex items-center gap-4 border-y border-border py-5">
+            <div className="mt-6 flex flex-wrap items-center gap-4 border-y border-border py-5">
               <div>
                 <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Unit Price</div>
                 <div className="text-3xl font-bold">{formatUSD(product.price)}</div>
@@ -117,19 +157,24 @@ function ProductDetail() {
               </div>
               <button
                 disabled={!inStock}
-                onClick={() => { cartStore.add(product, qty); toast.success("Added to cart"); }}
-                className="inline-flex items-center gap-2 bg-primary px-6 py-3 text-sm font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
+                onClick={() => { cartStore.add(product, qty); }}
+                className="inline-flex items-center gap-2 bg-primary px-6 py-3 text-sm font-semibold uppercase tracking-wider text-primary-foreground transition-colors hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
               >
                 <ShoppingCart className="h-4 w-4" /> Add to Cart
               </button>
-              <button className="inline-flex items-center gap-2 border border-primary px-6 py-3 text-sm font-semibold uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground">
+              <button className="inline-flex items-center gap-2 border border-primary px-6 py-3 text-sm font-semibold uppercase tracking-wider text-primary transition-colors hover:bg-primary hover:text-primary-foreground">
                 <FileText className="h-4 w-4" /> Request Quote
               </button>
             </div>
 
-            <button className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
-              <Download className="h-4 w-4" /> Download technical brochure (PDF, 4.2 MB)
-            </button>
+            <div className="mt-4 flex flex-wrap items-center gap-5 text-sm">
+              <button className="inline-flex items-center gap-2 font-medium text-primary hover:underline">
+                <Download className="h-4 w-4" /> Download brochure (PDF, 4.2 MB)
+              </button>
+              <button className="inline-flex items-center gap-2 font-medium text-muted-foreground hover:text-primary">
+                <Phone className="h-4 w-4" /> Contact sales
+              </button>
+            </div>
 
             <div className="mt-8 grid grid-cols-3 gap-3 border border-border bg-surface p-4 text-xs">
               {[
@@ -148,12 +193,12 @@ function ProductDetail() {
 
         {/* Tabs */}
         <div className="mt-16 border-b border-border">
-          <div className="flex gap-8">
+          <div className="flex gap-8 overflow-x-auto">
             {(["description", "specifications", "features"] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`relative pb-4 text-sm font-semibold uppercase tracking-wider transition-colors ${
+                className={`relative pb-4 text-sm font-semibold uppercase tracking-wider whitespace-nowrap transition-colors ${
                   tab === t ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -176,7 +221,7 @@ function ProductDetail() {
                 </p>
               </div>
               <aside className="border border-border bg-surface p-5">
-                <div className="eyebrow">At a glance</div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">At a glance</div>
                 <ul className="mt-3 space-y-2 text-sm">
                   <li className="flex justify-between border-b border-border py-2"><span className="text-muted-foreground">Origin</span><span className="font-semibold">Germany</span></li>
                   <li className="flex justify-between border-b border-border py-2"><span className="text-muted-foreground">HS Code</span><span className="font-mono">8479.89</span></li>
@@ -196,27 +241,46 @@ function ProductDetail() {
                       <td className="px-5 py-3 font-medium">{s.value}</td>
                     </tr>
                   ))}
+                  <tr className="bg-surface"><th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Material</th><td className="px-5 py-3 font-medium">Cast iron / SS316 / Alloy steel</td></tr>
+                  <tr className="bg-card"><th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Certification</th><td className="px-5 py-3 font-medium">CE · ISO 9001:2015 · RoHS</td></tr>
                 </tbody>
               </table>
             </div>
           )}
           {tab === "features" && (
-            <ul className="grid gap-3 md:grid-cols-2">
-              {product.features.map((f) => (
-                <li key={f} className="flex items-start gap-3 border border-border bg-card p-4 text-sm">
-                  <span className="mt-1 h-2 w-2 shrink-0 bg-accent" />
-                  <span>{f}</span>
-                </li>
-              ))}
+            <ul className="grid gap-4 md:grid-cols-2">
+              {product.features.map((f, i) => {
+                const Icon = FEATURE_ICONS[i % FEATURE_ICONS.length];
+                return (
+                  <li key={f} className="flex items-start gap-4 border border-border bg-card p-5 text-sm transition-colors hover:border-primary">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center bg-primary/10 text-primary">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <span className="font-medium">{f}</span>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
 
         {related.length > 0 && (
           <div className="mt-16">
-            <h2 className="text-2xl font-bold">Related products</h2>
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-2xl font-bold">Related products</h2>
+              <Link to="/products" search={{ category: product.category }} className="text-sm font-semibold text-primary hover:underline">View all →</Link>
+            </div>
             <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {related.map((p) => <ProductCard key={p.id} product={p} />)}
+            </div>
+          </div>
+        )}
+
+        {recentProducts.length > 0 && (
+          <div className="mt-16">
+            <h2 className="text-2xl font-bold">Recently viewed</h2>
+            <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {recentProducts.map((p) => <ProductCard key={p.id} product={p} />)}
             </div>
           </div>
         )}
