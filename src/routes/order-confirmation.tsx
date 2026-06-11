@@ -118,7 +118,10 @@ function Confirmation() {
               Download invoice (PDF)
             </button>
           </div>
-          <Link to="/products" className="inline-flex w-full items-center justify-center gap-2 bg-primary px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90">
+          <Link to="/order-tracking" search={{ id: orderNumber }} className="inline-flex w-full items-center justify-center gap-2 bg-accent px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-accent-foreground hover:bg-accent/90">
+            <MapPin className="h-4 w-4" /> Track Order
+          </Link>
+          <Link to="/products" className="inline-flex w-full items-center justify-center gap-2 border border-primary px-6 py-3 text-sm font-semibold uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground">
             Continue Shopping <ArrowRight className="h-4 w-4" />
           </Link>
         </aside>
