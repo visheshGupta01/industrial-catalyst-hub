@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProductsRouteImport } from './routes/products'
+import { Route as OrderTrackingRouteImport } from './routes/order-tracking'
 import { Route as OrderConfirmationRouteImport } from './routes/order-confirmation'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CartRouteImport } from './routes/cart'
@@ -27,6 +28,11 @@ import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 const ProductsRoute = ProductsRouteImport.update({
   id: '/products',
   path: '/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrderTrackingRoute = OrderTrackingRouteImport.update({
+  id: '/order-tracking',
+  path: '/order-tracking',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrderConfirmationRoute = OrderConfirmationRouteImport.update({
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/order-confirmation': typeof OrderConfirmationRoute
+  '/order-tracking': typeof OrderTrackingRoute
   '/products': typeof ProductsRouteWithChildren
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/coupons': typeof AdminCouponsRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/order-confirmation': typeof OrderConfirmationRoute
+  '/order-tracking': typeof OrderTrackingRoute
   '/products': typeof ProductsRouteWithChildren
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/coupons': typeof AdminCouponsRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/order-confirmation': typeof OrderConfirmationRoute
+  '/order-tracking': typeof OrderTrackingRoute
   '/products': typeof ProductsRouteWithChildren
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/coupons': typeof AdminCouponsRoute
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/order-confirmation'
+    | '/order-tracking'
     | '/products'
     | '/admin/analytics'
     | '/admin/coupons'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/order-confirmation'
+    | '/order-tracking'
     | '/products'
     | '/admin/analytics'
     | '/admin/coupons'
@@ -182,6 +193,7 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/order-confirmation'
+    | '/order-tracking'
     | '/products'
     | '/admin/analytics'
     | '/admin/coupons'
@@ -199,6 +211,7 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
   OrderConfirmationRoute: typeof OrderConfirmationRoute
+  OrderTrackingRoute: typeof OrderTrackingRoute
   ProductsRoute: typeof ProductsRouteWithChildren
 }
 
@@ -209,6 +222,13 @@ declare module '@tanstack/react-router' {
       path: '/products'
       fullPath: '/products'
       preLoaderRoute: typeof ProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/order-tracking': {
+      id: '/order-tracking'
+      path: '/order-tracking'
+      fullPath: '/order-tracking'
+      preLoaderRoute: typeof OrderTrackingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/order-confirmation': {
@@ -345,6 +365,7 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
   OrderConfirmationRoute: OrderConfirmationRoute,
+  OrderTrackingRoute: OrderTrackingRoute,
   ProductsRoute: ProductsRouteWithChildren,
 }
 export const routeTree = rootRouteImport

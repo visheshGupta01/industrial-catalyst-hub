@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CheckCircle2, Truck, FileText, ArrowRight, Package } from "lucide-react";
+import { CheckCircle2, Truck, FileText, ArrowRight, Package, MapPin } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
+import { CheckoutStepper, CHECKOUT_STEPS } from "@/components/site/CheckoutStepper";
 import { formatUSD } from "@/lib/format";
 import { z } from "zod";
 import { useEffect, useState } from "react";
@@ -34,6 +35,9 @@ function Confirmation() {
 
   return (
     <SiteLayout>
+      <div className="container-page pt-8">
+        <CheckoutStepper steps={CHECKOUT_STEPS} current={5} />
+      </div>
       <section className="border-b border-border bg-surface">
         <div className="container-page py-16">
           <div className="flex flex-col items-center text-center">
@@ -114,7 +118,10 @@ function Confirmation() {
               Download invoice (PDF)
             </button>
           </div>
-          <Link to="/products" className="inline-flex w-full items-center justify-center gap-2 bg-primary px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90">
+          <Link to="/order-tracking" search={{ id: orderNumber }} className="inline-flex w-full items-center justify-center gap-2 bg-accent px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-accent-foreground hover:bg-accent/90">
+            <MapPin className="h-4 w-4" /> Track Order
+          </Link>
+          <Link to="/products" className="inline-flex w-full items-center justify-center gap-2 border border-primary px-6 py-3 text-sm font-semibold uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground">
             Continue Shopping <ArrowRight className="h-4 w-4" />
           </Link>
         </aside>

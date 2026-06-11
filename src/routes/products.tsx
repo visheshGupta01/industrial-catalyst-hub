@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { ProductCard } from "@/components/site/ProductCard";
 import { products, categories } from "@/lib/mock-data";
@@ -27,6 +27,7 @@ function ProductsPage() {
   const [search, setSearch] = useState(q ?? "");
   const [cat, setCat] = useState(category ?? "All");
   const [sort, setSort] = useState<"featured" | "price-asc" | "price-desc" | "name">("featured");
+  const [mobileFilters, setMobileFilters] = useState(false);
 
   const filtered = useMemo(() => {
     let r = products;
@@ -42,9 +43,76 @@ function ProductsPage() {
     return arr;
   }, [cat, search, sort]);
 
+  const filterPanel = (
+    <>
+      <div>
+        <h4 className="text-xs font-semibold uppercase tracking-wider">Category</h4>
+        <ul className="mt-3 space-y-1.5 text-sm">
+          {["All", ...categories].map((c) => (
+            <li key={c}>
+              <button
+                onClick={() => setCat(c)}
+                className={`flex w-full items-center justify-between border-l-2 px-3 py-1.5 text-left transition-colors ${
+                  cat === c ? "border-accent bg-surface font-semibold text-primary" : "border-transparent hover:border-border hover:bg-surface"
+                }`}
+              >
+                <span>{c}</span>
+                <span className="text-xs text-muted-foreground">
+                  {c === "All" ? products.length : products.filter((p) => p.category === c).length}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="mt-6 border-t border-border pt-5">
+        <h4 className="text-xs font-semibold uppercase tracking-wider">Availability</h4>
+        <ul className="mt-3 space-y-2 text-sm">
+          {["In Stock", "Low Stock", "Out of Stock"].map((s) => (
+            <li key={s} className="flex items-center gap-2">
+              <input type="checkbox" defaultChecked className="accent-primary" />
+              <span>{s}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="mt-6 border-t border-border pt-5">
+        <h4 className="text-xs font-semibold uppercase tracking-wider">Certification</h4>
+        <ul className="mt-3 space-y-2 text-sm">
+          {["CE", "ISO 9001", "ATEX", "REACH", "UL"].map((s) => (
+            <li key={s} className="flex items-center gap-2">
+              <input type="checkbox" className="accent-primary" />
+              <span>{s}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="mt-6 border-t border-border pt-5">
+        <h4 className="text-xs font-semibold uppercase tracking-wider">Price range</h4>
+        <div className="mt-3 flex items-center gap-2 text-sm">
+          <input placeholder="Min" className="w-full border border-input bg-background px-2 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <span className="text-muted-foreground">—</span>
+          <input placeholder="Max" className="w-full border border-input bg-background px-2 py-1.5 text-sm focus:border-primary focus:outline-none" />
+        </div>
+      </div>
+      <div className="mt-6 border-t border-border pt-5 lg:hidden">
+        <h4 className="text-xs font-semibold uppercase tracking-wider">Sort by</h4>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as typeof sort)}
+          className="mt-3 w-full border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+        >
+          <option value="featured">Featured</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+          <option value="name">Name (A–Z)</option>
+        </select>
+      </div>
+    </>
+  );
+
   return (
     <SiteLayout>
-      {/* Page header */}
       <section className="border-b border-border bg-surface">
         <div className="container-page py-12">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -61,59 +129,26 @@ function ProductsPage() {
 
       <section className="container-page py-10">
         <div className="grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
-          {/* Sidebar */}
-          <aside className="space-y-6">
+          {/* Desktop sidebar */}
+          <aside className="hidden lg:block">
             <div className="border border-border bg-card p-5">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 <SlidersHorizontal className="h-3.5 w-3.5" /> Filters
               </div>
-              <div className="mt-5">
-                <h4 className="text-xs font-semibold uppercase tracking-wider">Category</h4>
-                <ul className="mt-3 space-y-1.5 text-sm">
-                  {["All", ...categories].map((c) => (
-                    <li key={c}>
-                      <button
-                        onClick={() => setCat(c)}
-                        className={`flex w-full items-center justify-between border-l-2 px-3 py-1.5 text-left transition-colors ${
-                          cat === c ? "border-accent bg-surface font-semibold text-primary" : "border-transparent hover:border-border hover:bg-surface"
-                        }`}
-                      >
-                        <span>{c}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {c === "All" ? products.length : products.filter((p) => p.category === c).length}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="mt-6 border-t border-border pt-5">
-                <h4 className="text-xs font-semibold uppercase tracking-wider">Availability</h4>
-                <ul className="mt-3 space-y-2 text-sm">
-                  {["In Stock", "Low Stock", "Out of Stock"].map((s) => (
-                    <li key={s} className="flex items-center gap-2">
-                      <input type="checkbox" defaultChecked className="accent-primary" />
-                      <span>{s}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="mt-6 border-t border-border pt-5">
-                <h4 className="text-xs font-semibold uppercase tracking-wider">Certification</h4>
-                <ul className="mt-3 space-y-2 text-sm">
-                  {["CE", "ISO 9001", "ATEX", "REACH", "UL"].map((s) => (
-                    <li key={s} className="flex items-center gap-2">
-                      <input type="checkbox" className="accent-primary" />
-                      <span>{s}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <div className="mt-5">{filterPanel}</div>
             </div>
           </aside>
 
           {/* Main */}
           <div>
+            {/* Mobile filter trigger */}
+            <button
+              onClick={() => setMobileFilters(true)}
+              className="mb-3 inline-flex w-full items-center justify-center gap-2 border border-border bg-card px-4 py-3 text-sm font-semibold uppercase tracking-wider hover:border-primary hover:text-primary lg:hidden"
+            >
+              <SlidersHorizontal className="h-4 w-4" /> Filter & Sort
+            </button>
+
             <div className="flex flex-wrap items-center gap-3 border border-border bg-card p-3">
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -127,7 +162,7 @@ function ProductsPage() {
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as typeof sort)}
-                className="border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                className="hidden border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none lg:block"
               >
                 <option value="featured">Sort: Featured</option>
                 <option value="price-asc">Price: Low to High</option>
@@ -149,6 +184,33 @@ function ProductsPage() {
           </div>
         </div>
       </section>
+
+      {/* Mobile filter drawer */}
+      {mobileFilters && (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog">
+          <div onClick={() => setMobileFilters(false)} className="absolute inset-0 bg-black/40 animate-fade-in" />
+          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto bg-background shadow-2xl animate-slide-up">
+            <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface px-5 py-4">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold uppercase tracking-[0.18em]">Filter & Sort</h3>
+              </div>
+              <button onClick={() => setMobileFilters(false)} className="p-1" aria-label="Close filters">
+                <X className="h-5 w-5" />
+              </button>
+            </header>
+            <div className="p-5">{filterPanel}</div>
+            <footer className="sticky bottom-0 grid grid-cols-2 gap-3 border-t border-border bg-background p-4">
+              <button onClick={() => { setCat("All"); setSearch(""); }} className="border border-border px-4 py-3 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:text-primary">
+                Clear all
+              </button>
+              <button onClick={() => setMobileFilters(false)} className="bg-primary px-4 py-3 text-xs font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90">
+                Show {filtered.length} results
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
     </SiteLayout>
   );
 }
