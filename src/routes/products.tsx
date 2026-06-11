@@ -189,7 +189,7 @@ function ProductsPage() {
       {mobileFilters && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog">
           <div onClick={() => setMobileFilters(false)} className="absolute inset-0 bg-black/40 animate-fade-in" />
-          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto bg-background shadow-2xl animate-slide-in-right" style={{ animation: "slide-in-right 0.3s ease-out" }}>
+          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto bg-background shadow-2xl animate-slide-up">
             <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface px-5 py-4">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="h-4 w-4 text-primary" />
