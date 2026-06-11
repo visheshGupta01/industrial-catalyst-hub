@@ -53,7 +53,7 @@ export function ProductCard({ product }: { product: Product }) {
           </Link>
           <button
             disabled={!inStock}
-            onClick={() => { cartStore.add(product); toast.success("Added to cart", { description: product.name }); }}
+            onClick={() => { cartStore.add(product); }}
             className="inline-flex items-center justify-center gap-1.5 bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
           >
             <ShoppingCart className="h-3 w-3" /> Add
