@@ -1,7 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ShoppingCart, Search, Menu, Phone, X } from "lucide-react";
+import { ShoppingCart, Search, Menu, Phone, X, User as UserIcon, LogOut } from "lucide-react";
 import { useState } from "react";
 import { useCart, cartTotals, cartStore } from "@/lib/cart-store";
+import { useAuth, authStore } from "@/lib/auth-store";
+import { toast } from "sonner";
 
 const NAV = [
   { to: "/", label: "Home" },
@@ -12,20 +14,24 @@ const NAV = [
 export function Navbar() {
   const items = useCart();
   const { count } = cartTotals(items);
+  const user = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [menu, setMenu] = useState(false);
+
+  const initials = user ? user.name.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase() : "";
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="hidden border-b border-border/60 bg-secondary text-secondary-foreground md:block">
         <div className="container-page flex h-9 items-center justify-between text-xs">
           <div className="flex items-center gap-6 opacity-80">
-            <span className="flex items-center gap-2"><Phone className="h-3 w-3" /> +1 (800) 555-0143 · 24/7 Industrial Support</span>
+            <span className="flex items-center gap-2"><Phone className="h-3 w-3" /> +91 22 6100 4500 · 24/7 Industrial Support</span>
             <span>ISO 9001:2015 Certified Supply Chain</span>
           </div>
           <div className="flex items-center gap-6 opacity-80">
-            <span>Ship to: United States · USD</span>
+            <span>Ship to: India · INR ₹</span>
             <Link to="/admin" className="hover:text-accent">Procurement Portal</Link>
           </div>
         </div>
@@ -51,9 +57,7 @@ export function Navbar() {
               <Link
                 key={n.to}
                 to={n.to}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  active ? "text-primary" : "text-foreground/80 hover:text-primary"
-                }`}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${active ? "text-primary" : "text-foreground/80 hover:text-primary"}`}
               >
                 {n.label}
               </Link>
@@ -79,6 +83,7 @@ export function Navbar() {
           >
             <Search className="h-4 w-4" />
           </button>
+
           <button
             onClick={() => cartStore.openDrawer()}
             className="relative inline-flex items-center gap-2 border border-border px-2.5 py-2 text-sm font-medium hover:border-primary hover:text-primary transition lg:px-3"
@@ -92,6 +97,45 @@ export function Navbar() {
               </span>
             )}
           </button>
+
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => setMenu((v) => !v)}
+                className="inline-flex items-center gap-2 border border-border px-2 py-1.5 hover:border-primary"
+                aria-label="Account"
+              >
+                <span className="grid h-6 w-6 place-items-center bg-primary text-[10px] font-bold text-primary-foreground">{initials}</span>
+                <span className="hidden text-sm font-medium md:inline">{user.name.split(" ")[0]}</span>
+              </button>
+              {menu && (
+                <div className="absolute right-0 mt-1 w-56 border border-border bg-card shadow-lg animate-fade-in">
+                  <div className="border-b border-border p-3">
+                    <div className="text-sm font-semibold">{user.name}</div>
+                    <div className="truncate text-xs text-muted-foreground">{user.email}</div>
+                  </div>
+                  <Link to="/profile" onClick={() => setMenu(false)} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface">
+                    <UserIcon className="h-4 w-4" /> My profile
+                  </Link>
+                  <Link to="/order-tracking" onClick={() => setMenu(false)} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface">
+                    <ShoppingCart className="h-4 w-4" /> Orders
+                  </Link>
+                  <button
+                    onClick={() => { authStore.logout(); setMenu(false); toast.success("Signed out"); }}
+                    className="flex w-full items-center gap-2 border-t border-border px-3 py-2 text-left text-sm text-destructive hover:bg-surface"
+                  >
+                    <LogOut className="h-4 w-4" /> Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link to="/auth" className="inline-flex items-center gap-2 border border-border px-3 py-2 text-sm font-medium hover:border-primary hover:text-primary">
+              <UserIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">Sign in</span>
+            </Link>
+          )}
+
           <a href="#quote" className="hidden bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 md:inline-block">
             Request Quote
           </a>
@@ -128,6 +172,15 @@ export function Navbar() {
             <Link to="/order-tracking" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">
               Order Tracking
             </Link>
+            {user ? (
+              <Link to="/profile" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">
+                My Profile
+              </Link>
+            ) : (
+              <Link to="/auth" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">
+                Sign in / Sign up
+              </Link>
+            )}
           </div>
         </div>
       )}
