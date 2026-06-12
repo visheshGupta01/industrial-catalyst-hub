@@ -1,10 +1,40 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, ShieldCheck, Truck, Wrench, HeadphonesIcon, Award, Factory, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowRight, ShieldCheck, Truck, Wrench, HeadphonesIcon, Award, Factory, ChevronRight, ChevronLeft } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { ProductCard } from "@/components/site/ProductCard";
 import { products, industries, testimonials, stats, categories } from "@/lib/mock-data";
 import * as Lucide from "lucide-react";
-import heroImg from "@/assets/hero-factory.jpg";
+import heroFactory from "@/assets/hero-factory.jpg";
+import heroAutomation from "@/assets/hero-automation.jpg";
+import heroPower from "@/assets/hero-power.jpg";
+
+const SLIDES = [
+  {
+    image: heroFactory,
+    eyebrow: "Trusted by 4,200+ Manufacturers",
+    title: "Industrial Equipment",
+    accent: "& Business Solutions",
+    body: "Supplying high-quality industrial products and machinery to modern manufacturing businesses — engineered for performance, certified for compliance.",
+    cta: { label: "Browse Catalog", to: "/products" as const },
+  },
+  {
+    image: heroAutomation,
+    eyebrow: "Automation & Robotics",
+    title: "Smart Factories,",
+    accent: "Built to Scale.",
+    body: "6-axis robotics, modular PLCs, vision systems, and OPC-UA ready edge gateways for Industry 4.0 transformation programs.",
+    cta: { label: "Explore Automation", to: "/products" as const },
+  },
+  {
+    image: heroPower,
+    eyebrow: "Power & Electrical Systems",
+    title: "Resilient Power",
+    accent: "for Critical Loads.",
+    body: "IEC-compliant switchgear, IE4 premium motors, and full electrical balance-of-plant with CE / UL documentation.",
+    cta: { label: "View Electrical", to: "/products" as const },
+  },
+];
 
 export const Route = createFileRoute("/")({
   head: () => ({
