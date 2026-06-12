@@ -1,10 +1,40 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, ShieldCheck, Truck, Wrench, HeadphonesIcon, Award, Factory, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowRight, ShieldCheck, Truck, Wrench, HeadphonesIcon, Award, Factory, ChevronRight, ChevronLeft } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { ProductCard } from "@/components/site/ProductCard";
 import { products, industries, testimonials, stats, categories } from "@/lib/mock-data";
 import * as Lucide from "lucide-react";
-import heroImg from "@/assets/hero-factory.jpg";
+import heroFactory from "@/assets/hero-factory.jpg";
+import heroAutomation from "@/assets/hero-automation.jpg";
+import heroPower from "@/assets/hero-power.jpg";
+
+const SLIDES = [
+  {
+    image: heroFactory,
+    eyebrow: "Trusted by 4,200+ Manufacturers",
+    title: "Industrial Equipment",
+    accent: "& Business Solutions",
+    body: "Supplying high-quality industrial products and machinery to modern manufacturing businesses — engineered for performance, certified for compliance.",
+    cta: { label: "Browse Catalog", to: "/products" as const },
+  },
+  {
+    image: heroAutomation,
+    eyebrow: "Automation & Robotics",
+    title: "Smart Factories,",
+    accent: "Built to Scale.",
+    body: "6-axis robotics, modular PLCs, vision systems, and OPC-UA ready edge gateways for Industry 4.0 transformation programs.",
+    cta: { label: "Explore Automation", to: "/products" as const },
+  },
+  {
+    image: heroPower,
+    eyebrow: "Power & Electrical Systems",
+    title: "Resilient Power",
+    accent: "for Critical Loads.",
+    body: "IEC-compliant switchgear, IE4 premium motors, and full electrical balance-of-plant with CE / UL documentation.",
+    cta: { label: "View Electrical", to: "/products" as const },
+  },
+];
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -23,43 +53,9 @@ function Home() {
 
   return (
     <SiteLayout>
-      {/* HERO */}
-      <section className="relative overflow-hidden border-b border-border bg-secondary text-secondary-foreground">
-        <img src={heroImg} alt="" width={1920} height={1080} className="absolute inset-0 h-full w-full object-cover opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-r from-secondary via-secondary/85 to-secondary/20" />
-        <div className="container-page relative grid gap-10 py-20 lg:grid-cols-12 lg:py-28">
-          <div className="lg:col-span-7">
-            <div className="inline-flex items-center gap-2 border border-white/20 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
-              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-              Trusted by 4,200+ Manufacturers
-            </div>
-            <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl lg:text-7xl">
-              Industrial Equipment<br />
-              & <span className="text-accent">Business Solutions</span>
-            </h1>
-            <p className="mt-6 max-w-xl text-base leading-relaxed opacity-80 md:text-lg">
-              Supplying high-quality industrial products and machinery to modern manufacturing
-              businesses — engineered for performance, certified for compliance, delivered with confidence.
-            </p>
-            <div className="mt-10 flex flex-wrap items-center gap-3">
-              <Link to="/products" className="inline-flex items-center gap-2 bg-accent px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-accent-foreground hover:bg-accent/90">
-                Browse Products <ArrowRight className="h-4 w-4" />
-              </Link>
-              <a href="#quote" className="inline-flex items-center gap-2 border border-white/30 px-6 py-3.5 text-sm font-semibold uppercase tracking-wider hover:border-accent hover:text-accent">
-                Request Quote
-              </a>
-            </div>
-            <div className="mt-12 grid grid-cols-2 gap-x-8 gap-y-4 border-t border-white/15 pt-8 text-sm sm:grid-cols-4">
-              {stats.map((s) => (
-                <div key={s.label}>
-                  <div className="text-2xl font-bold text-accent md:text-3xl">{s.value}</div>
-                  <div className="mt-1 text-[11px] uppercase tracking-wider opacity-60">{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* HERO CAROUSEL */}
+      <HeroCarousel />
+
 
       {/* TRUST STRIP */}
       <section className="border-b border-border bg-surface">
@@ -263,3 +259,83 @@ function Input({ label, placeholder, textarea = false }: { label: string; placeh
     </label>
   );
 }
+
+function HeroCarousel() {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx((i) => (i + 1) % SLIDES.length), 6000);
+    return () => clearInterval(t);
+  }, []);
+  const go = (delta: number) => setIdx((i) => (i + delta + SLIDES.length) % SLIDES.length);
+
+  return (
+    <section className="relative overflow-hidden border-b border-border bg-secondary text-secondary-foreground">
+      <div className="relative">
+        {SLIDES.map((slide, i) => (
+          <div
+            key={i}
+            className={`transition-opacity duration-700 ${i === idx ? "opacity-100" : "pointer-events-none absolute inset-0 opacity-0"}`}
+            aria-hidden={i !== idx}
+          >
+            <img src={slide.image} alt="" width={1920} height={1080} className="absolute inset-0 h-full w-full object-cover opacity-40" />
+            <div className="absolute inset-0 bg-gradient-to-r from-secondary via-secondary/85 to-secondary/20" />
+            <div className="container-page relative grid gap-10 py-20 lg:grid-cols-12 lg:py-28">
+              <div className="lg:col-span-7">
+                <div className="inline-flex items-center gap-2 border border-white/20 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                  {slide.eyebrow}
+                </div>
+                <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl lg:text-7xl">
+                  {slide.title}<br />
+                  <span className="text-accent">{slide.accent}</span>
+                </h1>
+                <p className="mt-6 max-w-xl text-base leading-relaxed opacity-80 md:text-lg">
+                  {slide.body}
+                </p>
+                <div className="mt-10 flex flex-wrap items-center gap-3">
+                  <Link to={slide.cta.to} className="inline-flex items-center gap-2 bg-accent px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-accent-foreground hover:bg-accent/90">
+                    {slide.cta.label} <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <a href="#quote" className="inline-flex items-center gap-2 border border-white/30 px-6 py-3.5 text-sm font-semibold uppercase tracking-wider hover:border-accent hover:text-accent">
+                    Request Quote
+                  </a>
+                </div>
+                <div className="mt-12 grid grid-cols-2 gap-x-8 gap-y-4 border-t border-white/15 pt-8 text-sm sm:grid-cols-4">
+                  {stats.map((s) => (
+                    <div key={s.label}>
+                      <div className="text-2xl font-bold text-accent md:text-3xl">{s.value}</div>
+                      <div className="mt-1 text-[11px] uppercase tracking-wider opacity-60">{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Controls */}
+      <div className="container-page absolute inset-x-0 bottom-6 z-10 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {SLIDES.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setIdx(i)}
+              aria-label={`Slide ${i + 1}`}
+              className={`h-1 transition-all ${i === idx ? "w-10 bg-accent" : "w-6 bg-white/30 hover:bg-white/60"}`}
+            />
+          ))}
+        </div>
+        <div className="hidden gap-2 md:flex">
+          <button onClick={() => go(-1)} aria-label="Previous slide" className="border border-white/30 p-2 hover:border-accent hover:text-accent">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button onClick={() => go(1)} aria-label="Next slide" className="border border-white/30 p-2 hover:border-accent hover:text-accent">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
