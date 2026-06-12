@@ -53,43 +53,9 @@ function Home() {
 
   return (
     <SiteLayout>
-      {/* HERO */}
-      <section className="relative overflow-hidden border-b border-border bg-secondary text-secondary-foreground">
-        <img src={heroImg} alt="" width={1920} height={1080} className="absolute inset-0 h-full w-full object-cover opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-r from-secondary via-secondary/85 to-secondary/20" />
-        <div className="container-page relative grid gap-10 py-20 lg:grid-cols-12 lg:py-28">
-          <div className="lg:col-span-7">
-            <div className="inline-flex items-center gap-2 border border-white/20 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
-              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-              Trusted by 4,200+ Manufacturers
-            </div>
-            <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl lg:text-7xl">
-              Industrial Equipment<br />
-              & <span className="text-accent">Business Solutions</span>
-            </h1>
-            <p className="mt-6 max-w-xl text-base leading-relaxed opacity-80 md:text-lg">
-              Supplying high-quality industrial products and machinery to modern manufacturing
-              businesses — engineered for performance, certified for compliance, delivered with confidence.
-            </p>
-            <div className="mt-10 flex flex-wrap items-center gap-3">
-              <Link to="/products" className="inline-flex items-center gap-2 bg-accent px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-accent-foreground hover:bg-accent/90">
-                Browse Products <ArrowRight className="h-4 w-4" />
-              </Link>
-              <a href="#quote" className="inline-flex items-center gap-2 border border-white/30 px-6 py-3.5 text-sm font-semibold uppercase tracking-wider hover:border-accent hover:text-accent">
-                Request Quote
-              </a>
-            </div>
-            <div className="mt-12 grid grid-cols-2 gap-x-8 gap-y-4 border-t border-white/15 pt-8 text-sm sm:grid-cols-4">
-              {stats.map((s) => (
-                <div key={s.label}>
-                  <div className="text-2xl font-bold text-accent md:text-3xl">{s.value}</div>
-                  <div className="mt-1 text-[11px] uppercase tracking-wider opacity-60">{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* HERO CAROUSEL */}
+      <HeroCarousel />
+
 
       {/* TRUST STRIP */}
       <section className="border-b border-border bg-surface">
