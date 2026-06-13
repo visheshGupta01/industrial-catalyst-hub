@@ -4,7 +4,8 @@ import { SiteLayout } from "@/components/site/SiteLayout";
 import { CheckoutStepper, CHECKOUT_STEPS } from "@/components/site/CheckoutStepper";
 import { useCart, cartTotals, cartStore } from "@/lib/cart-store";
 import { formatUSD } from "@/lib/format";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth-store";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [{ title: "Checkout — FerroCore" }] }),
@@ -13,12 +14,19 @@ export const Route = createFileRoute("/checkout")({
 
 // Map stepper index: 0 Cart, 1 Information, 2 Shipping, 3 Payment, 4 Review, 5 Confirmation
 function Checkout() {
+  const user = useAuth();
   const items = useCart();
   const totals = cartTotals(items);
   const navigate = useNavigate();
   const [step, setStep] = useState(1); // start at Information
   const [shipping, setShipping] = useState("standard");
   const [payment, setPayment] = useState("card");
+
+  useEffect(() => {
+    if (!user) navigate({ to: "/auth", replace: true });
+  }, [user, navigate]);
+
+  if (!user) return null;
 
   if (items.length === 0) {
     return (
