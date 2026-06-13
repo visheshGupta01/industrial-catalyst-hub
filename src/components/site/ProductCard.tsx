@@ -1,12 +1,24 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, ShoppingCart } from "lucide-react";
 import type { Product } from "@/lib/mock-data";
 import { formatUSD } from "@/lib/format";
 import { cartStore } from "@/lib/cart-store";
 import { ProductImage } from "./ProductImage";
+import { useAuth } from "@/lib/auth-store";
+import { toast } from "sonner";
 
 export function ProductCard({ product }: { product: Product }) {
   const inStock = product.status !== "Out of Stock";
+  const user = useAuth();
+  const navigate = useNavigate();
+  const addToCart = () => {
+    if (!user) {
+      toast.info("Sign in to add products to your cart");
+      navigate({ to: "/auth" });
+      return;
+    }
+    cartStore.add(product);
+  };
   return (
     <article className="group flex flex-col border border-border bg-card transition-all duration-200 hover:border-primary hover:shadow-[0_8px_30px_-12px_rgba(15,23,42,0.18)] hover:-translate-y-0.5">
 
@@ -53,10 +65,10 @@ export function ProductCard({ product }: { product: Product }) {
           </Link>
           <button
             disabled={!inStock}
-            onClick={() => { cartStore.add(product); }}
+            onClick={addToCart}
             className="inline-flex items-center justify-center gap-1.5 bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
           >
-            <ShoppingCart className="h-3 w-3" /> Add
+            <ShoppingCart className="h-3 w-3" /> {user ? "Add" : "Sign in"}
           </button>
         </div>
       </div>
