@@ -1,10 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Trash2, Minus, Plus, Tag, ShoppingBag, ArrowRight, BookmarkPlus, ArrowLeft } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { ProductImage } from "@/components/site/ProductImage";
 import { useCart, useSaved, cartStore, cartTotals } from "@/lib/cart-store";
 import { formatUSD } from "@/lib/format";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth-store";
 
 export const Route = createFileRoute("/cart")({
   head: () => ({ meta: [{ title: "Cart — FerroCore" }] }),
@@ -12,10 +13,18 @@ export const Route = createFileRoute("/cart")({
 });
 
 function CartPage() {
+  const user = useAuth();
+  const navigate = useNavigate();
   const items = useCart();
   const saved = useSaved();
   const totals = cartTotals(items);
   const [coupon, setCoupon] = useState("");
+
+  useEffect(() => {
+    if (!user) navigate({ to: "/auth", replace: true });
+  }, [user, navigate]);
+
+  if (!user) return null;
 
   return (
     <SiteLayout>
