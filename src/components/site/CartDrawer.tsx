@@ -71,7 +71,7 @@ export function CartDrawer() {
           ) : (
             <ul className="divide-y divide-border">
               {items.map(({ product, quantity }) => (
-                <li key={product.id} className="flex gap-3 p-5">
+                <li key={product.id} className="flex gap-3 p-5 transition-colors duration-200 hover:bg-surface">
                   <Link to="/products/$id" params={{ id: product.id }} onClick={() => cartStore.closeDrawer()} className="shrink-0">
                     <ProductImage image={product.image} className="h-16 w-16" />
                   </Link>
@@ -127,7 +127,7 @@ export function CartDrawer() {
               <Link
                 to="/checkout"
                 onClick={() => cartStore.closeDrawer()}
-                className="inline-flex w-full items-center justify-center gap-2 bg-accent px-5 py-3 text-xs font-semibold uppercase tracking-wider text-accent-foreground hover:bg-accent/90"
+                className="interactive-sheen inline-flex w-full items-center justify-center gap-2 bg-accent px-5 py-3 text-xs font-semibold uppercase tracking-wider text-accent-foreground hover:-translate-y-0.5 hover:bg-accent/90"
               >
                 Proceed to Checkout <ArrowRight className="h-4 w-4" />
               </Link>

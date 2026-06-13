@@ -32,7 +32,7 @@ function Home() {
 
       {/* TRUST STRIP */}
       <section className="border-b border-border bg-surface">
-        <div className="container-page grid grid-cols-2 gap-6 py-8 md:grid-cols-4">
+        <div className="container-page motion-stagger grid grid-cols-2 gap-6 py-8 md:grid-cols-4">
           {[
             { icon: ShieldCheck, label: "ISO 9001:2015 Certified" },
             { icon: Truck, label: "Worldwide Logistics" },
@@ -52,7 +52,7 @@ function Home() {
       {/* CATEGORIES */}
       <section className="container-page py-20">
         <SectionHeader eyebrow="Product Catalog" title="Categories We Supply" />
-        <div className="mt-10 grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+        <div className="motion-stagger mt-10 grid gap-4 md:grid-cols-3 lg:grid-cols-6">
           {categories.map((c, i) => (
             <Link
               key={c}
@@ -80,7 +80,7 @@ function Home() {
               View entire catalog <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="motion-stagger mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {featured.map((p) => <ProductCard key={p.id} product={p} />)}
           </div>
         </div>
@@ -250,7 +250,7 @@ function ProductCarousel() {
         {slides.map((product, i) => (
           <div
             key={product.id}
-            className={`transition-opacity duration-700 ${i === idx ? "opacity-100" : "pointer-events-none absolute inset-0 opacity-0"}`}
+            className={`transition-all duration-700 ease-out ${i === idx ? "translate-x-0 opacity-100" : "pointer-events-none absolute inset-0 translate-x-8 opacity-0"}`}
             aria-hidden={i !== idx}
           >
             <div className="container-page relative grid items-center gap-8 py-14 md:py-20 lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.8fr)] lg:gap-16">
@@ -268,7 +268,7 @@ function ProductCarousel() {
                   {product.features.slice(0, 3).map((feature) => <span key={feature} className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-steel" />{feature}</span>)}
                 </div>
                 <div className="mt-8 flex flex-wrap items-center gap-3">
-                  <Link to="/products/$id" params={{ id: product.id }} className="inline-flex items-center gap-2 bg-accent px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-accent-foreground hover:bg-accent/90">
+                  <Link to="/products/$id" params={{ id: product.id }} className="interactive-sheen inline-flex items-center gap-2 bg-accent px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-accent-foreground hover:-translate-y-0.5 hover:bg-accent/90">
                     View product <ArrowRight className="h-4 w-4" />
                   </Link>
                   {user ? (
