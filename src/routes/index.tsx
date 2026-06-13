@@ -244,7 +244,7 @@ function ProductCarousel() {
   const go = (delta: number) => setIdx((i) => (i + delta + slides.length) % slides.length);
 
   return (
-    <section className="relative overflow-hidden border-b border-border industrial-panel text-secondary-foreground">
+    <section className="relative overflow-hidden border-b border-border bg-secondary industrial-panel text-secondary-foreground">
       <div className="pointer-events-none absolute inset-0 hairline-grid opacity-15" />
       <div className="relative min-h-[570px] md:min-h-[620px]">
         {slides.map((product, i) => (
