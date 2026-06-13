@@ -38,8 +38,8 @@ export function Navbar() {
       </div>
 
       <div className="container-page flex h-16 items-center gap-3 lg:gap-6">
-        <Link to="/" className="flex items-center gap-3 shrink-0">
-          <div className="grid h-9 w-9 place-items-center bg-primary text-primary-foreground">
+        <Link to="/" className="group flex shrink-0 items-center gap-3">
+          <div className="grid h-9 w-9 place-items-center bg-primary text-primary-foreground transition-transform duration-300 group-hover:-rotate-3 group-hover:scale-105">
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2">
               <path d="M3 20h18M5 20V8l7-4 7 4v12M9 20v-6h6v6" />
             </svg>
@@ -57,7 +57,7 @@ export function Navbar() {
               <Link
                 key={n.to}
                 to={n.to}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${active ? "text-primary" : "text-foreground/80 hover:text-primary"}`}
+                className={`story-link px-4 py-2 text-sm font-medium transition-colors ${active ? "text-primary" : "text-foreground/80 hover:text-primary"}`}
               >
                 {n.label}
               </Link>
@@ -70,7 +70,7 @@ export function Navbar() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               placeholder="Search SKU, product, or specification…"
-              className="w-full border border-input bg-surface py-2 pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full border border-input bg-surface py-2 pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary focus:shadow-sm"
             />
           </div>
         </div>
@@ -138,7 +138,7 @@ export function Navbar() {
             </Link>
           )}
 
-          <a href="#quote" className="hidden bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 md:inline-block">
+          <a href="#quote" className="interactive-sheen hidden bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:-translate-y-0.5 hover:bg-primary/90 md:inline-block">
             Request Quote
           </a>
           <button onClick={() => setOpen(!open)} className="lg:hidden border border-border p-2" aria-label="Menu">

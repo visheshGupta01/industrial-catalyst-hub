@@ -112,7 +112,7 @@ function ProfilePage() {
             </nav>
           </aside>
 
-          <div>
+          <div className="animate-fade-in" key={tab}>
             {tab === "profile" && (
               <div className="border border-border bg-card">
                 <header className="flex items-center justify-between border-b border-border px-6 py-4">
@@ -180,7 +180,7 @@ function ProfilePage() {
                     </thead>
                     <tbody>
                       {orders.map((o) => (
-                        <tr key={o.id} className="border-t border-border">
+                        <tr key={o.id} className="border-t border-border transition-colors duration-200 hover:bg-surface">
                           <td className="px-5 py-3 font-mono text-xs">{o.id}</td>
                           <td className="px-5 py-3 text-muted-foreground">{o.date}</td>
                           <td className="px-5 py-3">
@@ -219,7 +219,7 @@ function ProfilePage() {
                     { tag: "Headquarters", line: user.address },
                     { tag: "Plant 2 — Chakan", line: "Survey 218, Chakan Industrial Belt, Pune 410501" },
                   ].map((a) => (
-                    <div key={a.tag} className="border border-border bg-surface p-5">
+                    <div key={a.tag} className="border border-border bg-surface p-5 transition-all duration-300 hover:-translate-y-1 hover:border-primary hover:premium-shadow">
                       <div className="flex items-center justify-between">
                         <span className="bg-primary/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-primary">{a.tag}</span>
                         <button className="text-xs text-muted-foreground hover:text-primary">Edit</button>

@@ -174,3 +174,128 @@
   to { transform: translateY(0); }
 }
 .animate-slide-up { animation: slide-up 0.3s ease-out; }
+
+/* Professional motion system — restrained, consistent, and accessible. */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes reveal-left {
+  from { opacity: 0; transform: translateX(-18px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes soft-scale {
+  from { opacity: 0; transform: scale(0.975); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes grid-drift {
+  from { background-position: 0 0; }
+  to { background-position: 64px 64px; }
+}
+
+@keyframes icon-float {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-5px) rotate(1deg); }
+}
+
+@keyframes sheen {
+  0% { transform: translateX(-130%) skewX(-20deg); }
+  100% { transform: translateX(330%) skewX(-20deg); }
+}
+
+main > section {
+  animation: reveal-up 0.55s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+main > section:nth-child(2) { animation-delay: 70ms; }
+main > section:nth-child(3) { animation-delay: 120ms; }
+
+main article,
+main form,
+main table,
+main aside,
+main figure {
+  animation: soft-scale 0.45s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+main :is(button, a), header :is(button, a), footer :is(button, a) {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 180ms;
+  transition-timing-function: ease-out;
+}
+
+main :is(button, a):active,
+header :is(button, a):active,
+footer :is(button, a):active {
+  transform: scale(0.97);
+}
+
+main :is(button, a):hover svg,
+header :is(button, a):hover svg,
+footer :is(button, a):hover svg {
+  transform: translateX(2px);
+}
+
+:is(button, a) svg {
+  transition: transform 180ms ease-out;
+}
+
+input, textarea, select {
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.hairline-grid {
+  animation: grid-drift 18s linear infinite;
+}
+
+.motion-stagger > * {
+  animation: reveal-up 0.5s cubic-bezier(.22, 1, .36, 1) both;
+}
+.motion-stagger > *:nth-child(2) { animation-delay: 60ms; }
+.motion-stagger > *:nth-child(3) { animation-delay: 120ms; }
+.motion-stagger > *:nth-child(4) { animation-delay: 180ms; }
+.motion-stagger > *:nth-child(5) { animation-delay: 240ms; }
+.motion-stagger > *:nth-child(6) { animation-delay: 300ms; }
+
+.product-visual-icon {
+  animation: icon-float 4.5s ease-in-out infinite;
+  transition: color 250ms ease, transform 250ms ease;
+}
+
+.product-visual:hover .product-visual-icon {
+  animation-play-state: paused;
+  transform: scale(1.08) rotate(-2deg);
+  color: var(--color-primary);
+}
+
+.interactive-sheen {
+  isolation: isolate;
+  overflow: hidden;
+  position: relative;
+}
+
+.interactive-sheen::after {
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--color-primary-foreground) 20%, transparent), transparent);
+  content: "";
+  inset: 0 auto 0 0;
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(-130%) skewX(-20deg);
+  width: 35%;
+}
+
+.interactive-sheen:hover::after {
+  animation: sheen 700ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

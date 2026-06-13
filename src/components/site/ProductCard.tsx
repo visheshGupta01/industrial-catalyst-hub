@@ -20,7 +20,7 @@ export function ProductCard({ product }: { product: Product }) {
     cartStore.add(product);
   };
   return (
-    <article className="group flex flex-col border border-border bg-card transition-all duration-200 hover:border-primary hover:shadow-[0_8px_30px_-12px_rgba(15,23,42,0.18)] hover:-translate-y-0.5">
+    <article className="group flex flex-col border border-border bg-card transition-all duration-300 hover:-translate-y-1 hover:border-primary hover:premium-shadow">
 
       <Link to="/products/$id" params={{ id: product.id }} className="block">
         <ProductImage image={product.image} className="aspect-[4/3]" />
@@ -66,7 +66,7 @@ export function ProductCard({ product }: { product: Product }) {
           <button
             disabled={!inStock}
             onClick={addToCart}
-            className="inline-flex items-center justify-center gap-1.5 bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
+            className="interactive-sheen inline-flex items-center justify-center gap-1.5 bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground hover:-translate-y-0.5 hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
           >
             <ShoppingCart className="h-3 w-3" /> {user ? "Add" : "Sign in"}
           </button>

@@ -32,12 +32,12 @@ export function ProductImage({ image, className = "" }: { image: string; classNa
   const Icon = ICONS[image] ?? Cog;
   return (
     <div
-      className={`relative flex items-center justify-center overflow-hidden bg-surface ${className}`}
+      className={`product-visual relative flex items-center justify-center overflow-hidden bg-surface ${className}`}
       aria-hidden
     >
       <div className="absolute inset-0 hairline-grid opacity-50" />
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-accent/40 to-transparent" />
-      <Icon className="relative h-24 w-24 text-secondary/80 stroke-[1.25]" />
+      <Icon className="product-visual-icon relative h-24 w-24 text-secondary/80 stroke-[1.25]" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-secondary/5" />
     </div>
   );
