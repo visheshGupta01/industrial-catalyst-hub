@@ -138,6 +138,7 @@
 }
 
 @utility industrial-panel {
+  background-color: var(--color-secondary);
   background-image:
     linear-gradient(135deg, color-mix(in oklab, var(--color-primary) 92%, var(--color-steel)), var(--color-secondary));
 }
