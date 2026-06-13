@@ -1,40 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, ShieldCheck, Truck, Wrench, HeadphonesIcon, Award, Factory, ChevronRight, ChevronLeft } from "lucide-react";
+import { ArrowRight, ShieldCheck, Truck, Wrench, HeadphonesIcon, Award, Factory, ChevronRight, ChevronLeft, ShoppingCart, CheckCircle2 } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { ProductCard } from "@/components/site/ProductCard";
+import { ProductImage } from "@/components/site/ProductImage";
 import { products, industries, testimonials, stats, categories } from "@/lib/mock-data";
+import { formatINR } from "@/lib/format";
+import { cartStore } from "@/lib/cart-store";
+import { useAuth } from "@/lib/auth-store";
 import * as Lucide from "lucide-react";
-import heroFactory from "@/assets/hero-factory.jpg";
-import heroAutomation from "@/assets/hero-automation.jpg";
-import heroPower from "@/assets/hero-power.jpg";
-
-const SLIDES = [
-  {
-    image: heroFactory,
-    eyebrow: "Trusted by 4,200+ Manufacturers",
-    title: "Industrial Equipment",
-    accent: "& Business Solutions",
-    body: "Supplying high-quality industrial products and machinery to modern manufacturing businesses — engineered for performance, certified for compliance.",
-    cta: { label: "Browse Catalog", to: "/products" as const },
-  },
-  {
-    image: heroAutomation,
-    eyebrow: "Automation & Robotics",
-    title: "Smart Factories,",
-    accent: "Built to Scale.",
-    body: "6-axis robotics, modular PLCs, vision systems, and OPC-UA ready edge gateways for Industry 4.0 transformation programs.",
-    cta: { label: "Explore Automation", to: "/products" as const },
-  },
-  {
-    image: heroPower,
-    eyebrow: "Power & Electrical Systems",
-    title: "Resilient Power",
-    accent: "for Critical Loads.",
-    body: "IEC-compliant switchgear, IE4 premium motors, and full electrical balance-of-plant with CE / UL documentation.",
-    cta: { label: "View Electrical", to: "/products" as const },
-  },
-];
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -53,8 +27,7 @@ function Home() {
 
   return (
     <SiteLayout>
-      {/* HERO CAROUSEL */}
-      <HeroCarousel />
+      <ProductCarousel />
 
 
       {/* TRUST STRIP */}
@@ -260,53 +233,60 @@ function Input({ label, placeholder, textarea = false }: { label: string; placeh
   );
 }
 
-function HeroCarousel() {
+function ProductCarousel() {
   const [idx, setIdx] = useState(0);
+  const user = useAuth();
+  const slides = products.slice(0, 5);
   useEffect(() => {
-    const t = setInterval(() => setIdx((i) => (i + 1) % SLIDES.length), 6000);
+    const t = setInterval(() => setIdx((i) => (i + 1) % slides.length), 6500);
     return () => clearInterval(t);
-  }, []);
-  const go = (delta: number) => setIdx((i) => (i + delta + SLIDES.length) % SLIDES.length);
+  }, [slides.length]);
+  const go = (delta: number) => setIdx((i) => (i + delta + slides.length) % slides.length);
 
   return (
-    <section className="relative overflow-hidden border-b border-border bg-secondary text-secondary-foreground">
-      <div className="relative">
-        {SLIDES.map((slide, i) => (
+    <section className="relative overflow-hidden border-b border-border bg-secondary industrial-panel text-secondary-foreground">
+      <div className="pointer-events-none absolute inset-0 hairline-grid opacity-15" />
+      <div className="relative min-h-[570px] md:min-h-[620px]">
+        {slides.map((product, i) => (
           <div
-            key={i}
+            key={product.id}
             className={`transition-opacity duration-700 ${i === idx ? "opacity-100" : "pointer-events-none absolute inset-0 opacity-0"}`}
             aria-hidden={i !== idx}
           >
-            <img src={slide.image} alt="" width={1920} height={1080} className="absolute inset-0 h-full w-full object-cover opacity-40" />
-            <div className="absolute inset-0 bg-gradient-to-r from-secondary via-secondary/85 to-secondary/20" />
-            <div className="container-page relative grid gap-10 py-20 lg:grid-cols-12 lg:py-28">
-              <div className="lg:col-span-7">
-                <div className="inline-flex items-center gap-2 border border-white/20 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
-                  <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                  {slide.eyebrow}
+            <div className="container-page relative grid items-center gap-8 py-14 md:py-20 lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.8fr)] lg:gap-16">
+              <div className="min-w-0">
+                <div className="inline-flex items-center gap-2 border border-secondary-foreground/20 bg-secondary-foreground/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent" /> Featured procurement pick · {product.category}
                 </div>
-                <h1 className="mt-6 text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl lg:text-7xl">
-                  {slide.title}<br />
-                  <span className="text-accent">{slide.accent}</span>
+                <h1 className="mt-6 text-4xl font-bold leading-[1.06] tracking-tight md:text-5xl lg:text-6xl">
+                  {product.name}
                 </h1>
-                <p className="mt-6 max-w-xl text-base leading-relaxed opacity-80 md:text-lg">
-                  {slide.body}
+                <p className="mt-5 max-w-xl text-base leading-relaxed opacity-75 md:text-lg">
+                  {product.shortDescription} Qualified for enterprise supply programs with documentation, installation, and lifecycle support.
                 </p>
-                <div className="mt-10 flex flex-wrap items-center gap-3">
-                  <Link to={slide.cta.to} className="inline-flex items-center gap-2 bg-accent px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-accent-foreground hover:bg-accent/90">
-                    {slide.cta.label} <ArrowRight className="h-4 w-4" />
-                  </Link>
-                  <a href="#quote" className="inline-flex items-center gap-2 border border-white/30 px-6 py-3.5 text-sm font-semibold uppercase tracking-wider hover:border-accent hover:text-accent">
-                    Request Quote
-                  </a>
+                <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-xs opacity-80">
+                  {product.features.slice(0, 3).map((feature) => <span key={feature} className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-steel" />{feature}</span>)}
                 </div>
-                <div className="mt-12 grid grid-cols-2 gap-x-8 gap-y-4 border-t border-white/15 pt-8 text-sm sm:grid-cols-4">
-                  {stats.map((s) => (
-                    <div key={s.label}>
-                      <div className="text-2xl font-bold text-accent md:text-3xl">{s.value}</div>
-                      <div className="mt-1 text-[11px] uppercase tracking-wider opacity-60">{s.label}</div>
-                    </div>
-                  ))}
+                <div className="mt-8 flex flex-wrap items-center gap-3">
+                  <Link to="/products/$id" params={{ id: product.id }} className="inline-flex items-center gap-2 bg-accent px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-accent-foreground hover:bg-accent/90">
+                    View product <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  {user ? (
+                    <button onClick={() => cartStore.add(product)} className="inline-flex items-center gap-2 border border-secondary-foreground/30 px-6 py-3.5 text-sm font-semibold uppercase tracking-wider hover:border-accent hover:text-accent"><ShoppingCart className="h-4 w-4" /> Add to cart</button>
+                  ) : (
+                    <Link to="/auth" className="inline-flex items-center gap-2 border border-secondary-foreground/30 px-6 py-3.5 text-sm font-semibold uppercase tracking-wider hover:border-accent hover:text-accent">Sign in to purchase</Link>
+                  )}
+                </div>
+              </div>
+              <div className="relative hidden lg:block">
+                <div className="absolute -inset-5 border border-steel/30" />
+                <div className="relative bg-background p-7 premium-shadow">
+                  <div className="absolute left-0 top-0 bg-copper px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary-foreground">{product.code}</div>
+                  <ProductImage image={product.image} className="aspect-[4/3]" />
+                  <div className="mt-4 grid grid-cols-[1fr_auto] items-end gap-4 border-t border-border pt-4 text-foreground">
+                    <div><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Enterprise price</div><div className="text-2xl font-bold">{formatINR(product.price)}</div></div>
+                    <span className="text-xs font-semibold text-success">{product.status}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -315,22 +295,22 @@ function HeroCarousel() {
       </div>
 
       {/* Controls */}
-      <div className="container-page absolute inset-x-0 bottom-6 z-10 flex items-center justify-between">
+      <div className="container-page absolute inset-x-0 bottom-5 z-10 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {SLIDES.map((_, i) => (
+          {slides.map((product, i) => (
             <button
-              key={i}
+              key={product.id}
               onClick={() => setIdx(i)}
-              aria-label={`Slide ${i + 1}`}
-              className={`h-1 transition-all ${i === idx ? "w-10 bg-accent" : "w-6 bg-white/30 hover:bg-white/60"}`}
+              aria-label={`Show ${product.name}`}
+              className={`h-1 transition-all ${i === idx ? "w-10 bg-accent" : "w-6 bg-secondary-foreground/30 hover:bg-secondary-foreground/60"}`}
             />
           ))}
         </div>
         <div className="hidden gap-2 md:flex">
-          <button onClick={() => go(-1)} aria-label="Previous slide" className="border border-white/30 p-2 hover:border-accent hover:text-accent">
+          <button onClick={() => go(-1)} aria-label="Previous product" className="border border-secondary-foreground/30 p-2 hover:border-accent hover:text-accent">
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <button onClick={() => go(1)} aria-label="Next slide" className="border border-white/30 p-2 hover:border-accent hover:text-accent">
+          <button onClick={() => go(1)} aria-label="Next product" className="border border-secondary-foreground/30 p-2 hover:border-accent hover:text-accent">
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>

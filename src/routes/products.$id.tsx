@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { Download, ShoppingCart, FileText, Minus, Plus, ShieldCheck, Truck, Award, Phone, Zap, Settings, BadgeCheck } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
@@ -7,6 +7,8 @@ import { ProductCard } from "@/components/site/ProductCard";
 import { getProduct, products } from "@/lib/mock-data";
 import { formatUSD } from "@/lib/format";
 import { cartStore, useRecentlyViewed } from "@/lib/cart-store";
+import { useAuth } from "@/lib/auth-store";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/products/$id")({
   loader: ({ params }) => {
@@ -50,6 +52,8 @@ function ProductDetail() {
   const [activeImg, setActiveImg] = useState(0);
   const [zoom, setZoom] = useState<{ x: number; y: number } | null>(null);
   const recent = useRecentlyViewed();
+  const user = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     cartStore.trackView(product.id);
@@ -157,10 +161,17 @@ function ProductDetail() {
               </div>
               <button
                 disabled={!inStock}
-                onClick={() => { cartStore.add(product, qty); }}
+                onClick={() => {
+                  if (!user) {
+                    toast.info("Sign in to add products to your cart");
+                    navigate({ to: "/auth" });
+                    return;
+                  }
+                  cartStore.add(product, qty);
+                }}
                 className="inline-flex items-center gap-2 bg-primary px-6 py-3 text-sm font-semibold uppercase tracking-wider text-primary-foreground transition-colors hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
               >
-                <ShoppingCart className="h-4 w-4" /> Add to Cart
+                <ShoppingCart className="h-4 w-4" /> {user ? "Add to Cart" : "Sign in to purchase"}
               </button>
               <button className="inline-flex items-center gap-2 border border-primary px-6 py-3 text-sm font-semibold uppercase tracking-wider text-primary transition-colors hover:bg-primary hover:text-primary-foreground">
                 <FileText className="h-4 w-4" /> Request Quote

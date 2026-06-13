@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ShoppingCart, Search, Menu, Phone, X, User as UserIcon, LogOut } from "lucide-react";
+import { ShoppingCart, Search, Menu, Phone, X, User as UserIcon, LogOut, Package, Heart, MapPin, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { useCart, cartTotals, cartStore } from "@/lib/cart-store";
 import { useAuth, authStore } from "@/lib/auth-store";
@@ -84,25 +84,27 @@ export function Navbar() {
             <Search className="h-4 w-4" />
           </button>
 
-          <button
-            onClick={() => cartStore.openDrawer()}
-            className="relative inline-flex items-center gap-2 border border-border px-2.5 py-2 text-sm font-medium hover:border-primary hover:text-primary transition lg:px-3"
-            aria-label="Cart"
-          >
-            <ShoppingCart className="h-4 w-4" />
-            <span className="hidden sm:inline">Cart</span>
-            {count > 0 && (
-              <span className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center bg-accent px-1 text-[11px] font-bold text-accent-foreground animate-scale-in">
-                {count}
-              </span>
-            )}
-          </button>
+          {user && (
+            <button
+              onClick={() => cartStore.openDrawer()}
+              className="relative inline-flex items-center gap-2 border border-border px-2.5 py-2 text-sm font-medium transition hover:border-primary hover:text-primary lg:px-3"
+              aria-label="Cart"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              <span className="hidden sm:inline">Cart</span>
+              {count > 0 && (
+                <span className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center bg-accent px-1 text-[11px] font-bold text-accent-foreground animate-scale-in">
+                  {count}
+                </span>
+              )}
+            </button>
+          )}
 
           {user ? (
             <div className="relative">
               <button
                 onClick={() => setMenu((v) => !v)}
-                className="inline-flex items-center gap-2 border border-border px-2 py-1.5 hover:border-primary"
+                className="hidden items-center gap-2 border border-border px-2 py-1.5 hover:border-primary md:inline-flex"
                 aria-label="Account"
               >
                 <span className="grid h-6 w-6 place-items-center bg-primary text-[10px] font-bold text-primary-foreground">{initials}</span>
@@ -162,26 +164,50 @@ export function Navbar() {
       )}
 
       {open && (
-        <div className="border-t border-border bg-background lg:hidden">
-          <div className="container-page flex flex-col py-3">
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button className="absolute inset-0 bg-secondary/55 backdrop-blur-sm" onClick={() => setOpen(false)} aria-label="Close menu" />
+          <aside className="absolute right-0 top-0 flex h-full w-[min(88vw,360px)] flex-col bg-background premium-shadow animate-in slide-in-from-right">
+            <header className="industrial-panel flex items-center justify-between px-5 py-5 text-secondary-foreground">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">FerroCore</div>
+                <div className="mt-1 text-lg font-bold">{user ? user.name : "Navigation"}</div>
+                {user && <div className="text-xs opacity-70">{user.company}</div>}
+              </div>
+              <button onClick={() => setOpen(false)} className="border border-secondary-foreground/20 p-2" aria-label="Close menu"><X className="h-4 w-4" /></button>
+            </header>
+            <div className="flex flex-1 flex-col overflow-y-auto px-5 py-4">
             {NAV.map((n) => (
-              <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="py-2 text-sm font-medium">
-                {n.label}
+              <Link key={n.to} to={n.to} onClick={() => setOpen(false)} className="flex items-center justify-between border-b border-border py-3 text-sm font-semibold">
+                {n.label}<ChevronRight className="h-4 w-4 text-muted-foreground" />
               </Link>
             ))}
-            <Link to="/order-tracking" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">
-              Order Tracking
-            </Link>
             {user ? (
-              <Link to="/profile" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">
-                My Profile
-              </Link>
+              <div className="mt-6">
+                <div className="eyebrow mb-2">My account</div>
+                {[
+                  { label: "Profile details", icon: UserIcon },
+                  { label: "My orders", icon: Package },
+                  { label: "Wishlist", icon: Heart },
+                  { label: "Saved addresses", icon: MapPin },
+                ].map(({ label, icon: Icon }) => (
+                  <Link key={label} to="/profile" onClick={() => setOpen(false)} className="flex items-center gap-3 border-b border-border py-3 text-sm font-medium">
+                    <Icon className="h-4 w-4 text-primary" /> {label}
+                  </Link>
+                ))}
+                <Link to="/order-tracking" onClick={() => setOpen(false)} className="flex items-center gap-3 border-b border-border py-3 text-sm font-medium">
+                  <ShoppingCart className="h-4 w-4 text-primary" /> Track shipment
+                </Link>
+                <button onClick={() => { authStore.logout(); setOpen(false); toast.success("Signed out"); }} className="mt-4 flex w-full items-center gap-3 py-3 text-left text-sm font-medium text-destructive">
+                  <LogOut className="h-4 w-4" /> Sign out
+                </button>
+              </div>
             ) : (
-              <Link to="/auth" onClick={() => setOpen(false)} className="py-2 text-sm font-medium">
+              <Link to="/auth" onClick={() => setOpen(false)} className="mt-6 bg-primary px-4 py-3 text-center text-sm font-semibold text-primary-foreground">
                 Sign in / Sign up
               </Link>
             )}
-          </div>
+            </div>
+          </aside>
         </div>
       )}
     </header>

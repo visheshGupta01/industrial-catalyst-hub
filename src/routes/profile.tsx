@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { User, Building2, Mail, Phone, MapPin, Package, Heart, LogOut, FileText, Pencil, ShieldCheck } from "lucide-react";
+import { User, Building2, Mail, Phone, MapPin, Package, Heart, LogOut, FileText, Pencil, ShieldCheck, Menu, X } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { useAuth, authStore } from "@/lib/auth-store";
 import { orders } from "@/lib/mock-data";
@@ -22,6 +22,7 @@ function ProfilePage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<"profile" | "orders" | "wishlist" | "addresses">("profile");
   const [edit, setEdit] = useState(false);
+  const [mobileNav, setMobileNav] = useState(false);
 
   useEffect(() => {
     if (user === null) navigate({ to: "/auth" });
@@ -75,9 +76,17 @@ function ProfilePage() {
       </section>
 
       <section className="container-page py-10">
+        <button onClick={() => setMobileNav(true)} className="mb-5 inline-flex items-center gap-2 border border-border bg-card px-4 py-2.5 text-sm font-semibold text-primary shadow-sm lg:hidden">
+          <Menu className="h-4 w-4" /> Account options
+        </button>
         <div className="grid gap-8 lg:grid-cols-[240px_minmax(0,1fr)]">
-          <aside>
-            <nav className="border border-border bg-card">
+          {mobileNav && <button className="fixed inset-0 z-40 bg-secondary/55 backdrop-blur-sm lg:hidden" onClick={() => setMobileNav(false)} aria-label="Close account options" />}
+          <aside className={`fixed left-0 top-0 z-50 h-full w-[min(86vw,320px)] bg-background p-5 premium-shadow transition-transform duration-300 lg:static lg:z-auto lg:h-auto lg:w-auto lg:translate-x-0 lg:bg-transparent lg:p-0 lg:shadow-none ${mobileNav ? "translate-x-0" : "-translate-x-full"}`}>
+            <div className="mb-5 flex items-center justify-between lg:hidden">
+              <div><div className="eyebrow">My account</div><div className="mt-1 font-bold">Account options</div></div>
+              <button onClick={() => setMobileNav(false)} className="border border-border p-2" aria-label="Close"><X className="h-4 w-4" /></button>
+            </div>
+            <nav className="border border-border bg-card premium-shadow">
               {[
                 { id: "profile", label: "Profile", icon: User },
                 { id: "orders", label: "Orders", icon: Package },
@@ -86,7 +95,7 @@ function ProfilePage() {
               ].map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
-                  onClick={() => setTab(id as typeof tab)}
+                   onClick={() => { setTab(id as typeof tab); setMobileNav(false); }}
                   className={`flex w-full items-center gap-3 border-l-2 px-4 py-3 text-left text-sm transition-colors ${
                     tab === id ? "border-accent bg-surface font-semibold text-primary" : "border-transparent hover:bg-surface"
                   }`}
