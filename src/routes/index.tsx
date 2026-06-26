@@ -165,7 +165,7 @@ function Home() {
 
       {/* TESTIMONIALS */}
       <section className="container-page py-20">
-        <SectionHeader eyebrow="Client Voices" title="Procurement leaders rely on FerroCore." />
+        <SectionHeader eyebrow="What Customers Say" title="Loved by buyers across India." />
         <div className="mt-10 grid gap-6 lg:grid-cols-3">
           {testimonials.map((t) => (
             <figure key={t.name} className="border border-border bg-card p-7">
