@@ -48,7 +48,7 @@ export function ProductCard({ product }: { product: Product }) {
 
         <div className="mt-5 flex items-end justify-between">
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Starting at</div>
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Price</div>
             <div className="text-xl font-bold text-foreground">{formatUSD(product.price)}</div>
           </div>
           <span className={`text-[11px] font-semibold uppercase tracking-wider ${
