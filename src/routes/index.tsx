@@ -34,10 +34,10 @@ function Home() {
       <section className="border-b border-border bg-surface">
         <div className="container-page motion-stagger grid grid-cols-2 gap-6 py-8 md:grid-cols-4">
           {[
-            { icon: ShieldCheck, label: "ISO 9001:2015 Certified" },
-            { icon: Truck, label: "Worldwide Logistics" },
-            { icon: Wrench, label: "Installation & Service" },
-            { icon: HeadphonesIcon, label: "24/7 Technical Support" },
+            { icon: ShieldCheck, label: "Verified Quality" },
+            { icon: Truck, label: "Ships Worldwide" },
+            { icon: Wrench, label: "Setup & Service Help" },
+            { icon: HeadphonesIcon, label: "Support Anytime" },
           ].map(({ icon: Icon, label }) => (
             <div key={label} className="flex items-center gap-3">
               <div className="grid h-10 w-10 shrink-0 place-items-center bg-primary/10 text-primary">
@@ -51,7 +51,7 @@ function Home() {
 
       {/* CATEGORIES */}
       <section className="container-page py-20">
-        <SectionHeader eyebrow="Product Catalog" title="Categories We Supply" />
+        <SectionHeader eyebrow="Browse" title="Shop by Category" />
         <div className="motion-stagger mt-10 grid gap-4 md:grid-cols-3 lg:grid-cols-6">
           {categories.map((c, i) => (
             <Link
@@ -62,7 +62,7 @@ function Home() {
             >
               <Factory className="h-7 w-7 text-primary" />
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Cat. 0{i + 1}</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Category {i + 1}</div>
                 <div className="mt-1 text-sm font-semibold leading-snug">{c}</div>
               </div>
               <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground transition group-hover:translate-x-1 group-hover:text-primary" />
@@ -75,9 +75,9 @@ function Home() {
       <section className="border-y border-border bg-surface">
         <div className="container-page py-20">
           <div className="flex flex-wrap items-end justify-between gap-4">
-            <SectionHeader eyebrow="Featured" title="Top Industrial Products" />
+            <SectionHeader eyebrow="Featured" title="Popular Products" />
             <Link to="/products" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:gap-2 transition-all">
-              View entire catalog <ArrowRight className="h-4 w-4" />
+              See all products <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
           <div className="motion-stagger mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -90,18 +90,17 @@ function Home() {
       <section className="container-page py-20">
         <div className="grid gap-12 lg:grid-cols-2">
           <div>
-            <SectionHeader eyebrow="Why Choose FerroCore" title="Enterprise procurement, engineered." />
+            <SectionHeader eyebrow="Why Choose Us" title="Buying made simple." />
             <p className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground">
-              Four decades supplying tier-1 manufacturers, energy operators, and infrastructure
-              programs. Every SKU is qualified through our supplier audit framework with full
-              documentation traceability.
+              We've spent 40+ years helping factories, energy companies and builders get the
+              equipment they need — quickly, with paperwork sorted and real people to help.
             </p>
             <div className="mt-8 space-y-5">
               {[
-                { icon: Award, title: "Tier-1 Qualified Supply Chain", desc: "Every supplier audited under ISO 9001, with full MTC and CoC available before purchase." },
-                { icon: ShieldCheck, title: "Compliance-First Sourcing", desc: "CE, ATEX, IECEx, REACH, RoHS, and OEM-traceable components for regulated industries." },
-                { icon: Wrench, title: "Installation, Service & Spares", desc: "Lifecycle support including commissioning, training, preventative maintenance, and OEM spares." },
-                { icon: HeadphonesIcon, title: "Dedicated Account Managers", desc: "Named engineers for capex equipment programs, with SLA-backed response times." },
+                { icon: Award, title: "Trusted Suppliers", desc: "We check every supplier so you get genuine, quality-tested products every time." },
+                { icon: ShieldCheck, title: "All Documents Included", desc: "Certificates and test reports are shared up front, so there are no surprises." },
+                { icon: Wrench, title: "Help With Setup & Spares", desc: "Our team helps with installation, training and finding spare parts later on." },
+                { icon: HeadphonesIcon, title: "A Real Person To Talk To", desc: "Every business account gets a dedicated contact who answers within hours, not days." },
               ].map(({ icon: Icon, title, desc }) => (
                 <div key={title} className="flex gap-4">
                   <div className="grid h-11 w-11 shrink-0 place-items-center bg-primary text-primary-foreground">
@@ -117,17 +116,17 @@ function Home() {
           </div>
           <div className="relative">
             <div className="border border-border bg-card p-8 md:p-10">
-              <div className="eyebrow">Procurement Toolkit</div>
-              <h3 className="mt-3 text-2xl font-bold leading-tight">Volume pricing &<br />enterprise terms.</h3>
+              <div className="eyebrow">Business Account Perks</div>
+              <h3 className="mt-3 text-2xl font-bold leading-tight">Better prices for<br />bigger orders.</h3>
               <p className="mt-4 text-sm text-muted-foreground">
-                Get tier discounts, framework agreements, and Net-30 terms for qualifying business accounts.
+                Open a free business account to unlock bulk discounts, flexible payment options and a dedicated contact.
               </p>
               <div className="mt-6 divide-y divide-border border-y border-border">
                 {[
-                  ["Annual contract volume", "$50K+"],
-                  ["Payment terms", "Net-30 / LC available"],
-                  ["Dedicated engineer", "Included"],
-                  ["Compliance documentation", "Pre-shipment"],
+                  ["Yearly purchases above", "₹40 lakh+"],
+                  ["Pay later option", "Available (30 days)"],
+                  ["Personal contact", "Included"],
+                  ["Product certificates", "Sent with order"],
                 ].map(([k, v]) => (
                   <div key={k} className="flex items-center justify-between py-3 text-sm">
                     <span className="text-muted-foreground">{k}</span>
@@ -136,7 +135,7 @@ function Home() {
                 ))}
               </div>
               <button className="mt-6 w-full bg-secondary px-6 py-3 text-sm font-semibold uppercase tracking-wider text-secondary-foreground hover:bg-secondary/90">
-                Open business account
+                Open a business account
               </button>
             </div>
           </div>
@@ -146,7 +145,7 @@ function Home() {
       {/* INDUSTRIES */}
       <section className="border-y border-border bg-secondary text-secondary-foreground">
         <div className="container-page py-20">
-          <SectionHeader eyebrow="Industries We Serve" title="Trusted by demanding sectors." dark />
+          <SectionHeader eyebrow="Who We Help" title="Built for every kind of business." dark />
           <div className="mt-10 grid grid-cols-2 gap-px bg-white/10 sm:grid-cols-4">
             {industries.map((ind) => {
               const Icon = (Lucide as unknown as Record<string, React.ComponentType<{ className?: string }>>)[ind.icon] ?? Factory;
@@ -166,7 +165,7 @@ function Home() {
 
       {/* TESTIMONIALS */}
       <section className="container-page py-20">
-        <SectionHeader eyebrow="Client Voices" title="Procurement leaders rely on FerroCore." />
+        <SectionHeader eyebrow="What Customers Say" title="Loved by buyers across India." />
         <div className="mt-10 grid gap-6 lg:grid-cols-3">
           {testimonials.map((t) => (
             <figure key={t.name} className="border border-border bg-card p-7">
@@ -185,21 +184,21 @@ function Home() {
       <section id="quote" className="border-t border-border bg-surface">
         <div className="container-page grid gap-10 py-20 lg:grid-cols-2 lg:items-center">
           <div>
-            <div className="eyebrow">Talk to procurement</div>
+            <div className="eyebrow">Get In Touch</div>
             <h2 className="mt-3 text-3xl font-bold leading-tight md:text-4xl">
-              Request a quote for your next industrial program.
+              Tell us what you need — we'll send a price.
             </h2>
             <p className="mt-4 max-w-md text-sm text-muted-foreground">
-              Share your specifications, quantities, and delivery requirements. Our engineers respond within one business day with a fully-documented proposal.
+              Share a few details about your requirement. Our team gets back to you within one working day with a full quote.
             </p>
           </div>
           <form className="grid gap-3 border border-border bg-card p-6 md:grid-cols-2">
-            <Input label="Company" placeholder="Acme Manufacturing Ltd." />
-            <Input label="Industry" placeholder="Aerospace" />
-            <Input label="Work email" placeholder="procurement@acme.com" />
-            <Input label="Phone" placeholder="+1 555 000 0000" />
+            <Input label="Company name" placeholder="Your company" />
+            <Input label="What you do" placeholder="e.g. Car parts maker" />
+            <Input label="Work email" placeholder="you@company.com" />
+            <Input label="Phone" placeholder="+91 98XXX XXXXX" />
             <div className="md:col-span-2">
-              <Input label="Requirements" placeholder="Equipment, quantities, delivery window…" textarea />
+              <Input label="What do you need?" placeholder="Tell us the product, quantity and when you need it…" textarea />
             </div>
             <button type="button" className="md:col-span-2 bg-primary px-6 py-3 text-sm font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90">
               Send request
@@ -256,25 +255,25 @@ function ProductCarousel() {
             <div className="container-page relative grid items-center gap-8 py-14 md:py-20 lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.8fr)] lg:gap-16">
               <div className="min-w-0">
                 <div className="inline-flex items-center gap-2 border border-secondary-foreground/20 bg-secondary-foreground/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
-                  <span className="h-1.5 w-1.5 rounded-full bg-accent" /> Featured procurement pick · {product.category}
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent" /> Featured · {product.category}
                 </div>
                 <h1 className="mt-6 text-4xl font-bold leading-[1.06] tracking-tight md:text-5xl lg:text-6xl">
                   {product.name}
                 </h1>
                 <p className="mt-5 max-w-xl text-base leading-relaxed opacity-75 md:text-lg">
-                  {product.shortDescription} Qualified for enterprise supply programs with documentation, installation, and lifecycle support.
+                  {product.shortDescription} Comes with full setup help and after-sales support.
                 </p>
                 <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-xs opacity-80">
                   {product.features.slice(0, 3).map((feature) => <span key={feature} className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-steel" />{feature}</span>)}
                 </div>
                 <div className="mt-8 flex flex-wrap items-center gap-3">
                   <Link to="/products/$id" params={{ id: product.id }} className="interactive-sheen inline-flex items-center gap-2 bg-accent px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-accent-foreground hover:-translate-y-0.5 hover:bg-accent/90">
-                    View product <ArrowRight className="h-4 w-4" />
+                    View details <ArrowRight className="h-4 w-4" />
                   </Link>
                   {user ? (
                     <button onClick={() => cartStore.add(product)} className="inline-flex items-center gap-2 border border-secondary-foreground/30 px-6 py-3.5 text-sm font-semibold uppercase tracking-wider hover:border-accent hover:text-accent"><ShoppingCart className="h-4 w-4" /> Add to cart</button>
                   ) : (
-                    <Link to="/auth" className="inline-flex items-center gap-2 border border-secondary-foreground/30 px-6 py-3.5 text-sm font-semibold uppercase tracking-wider hover:border-accent hover:text-accent">Sign in to purchase</Link>
+                    <Link to="/auth" className="inline-flex items-center gap-2 border border-secondary-foreground/30 px-6 py-3.5 text-sm font-semibold uppercase tracking-wider hover:border-accent hover:text-accent">Sign in to buy</Link>
                   )}
                 </div>
               </div>
@@ -284,7 +283,7 @@ function ProductCarousel() {
                   <div className="absolute left-0 top-0 bg-copper px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary-foreground">{product.code}</div>
                   <ProductImage image={product.image} className="aspect-[4/3]" />
                   <div className="mt-4 grid grid-cols-[1fr_auto] items-end gap-4 border-t border-border pt-4 text-foreground">
-                    <div><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Enterprise price</div><div className="text-2xl font-bold">{formatINR(product.price)}</div></div>
+                    <div><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Price</div><div className="text-2xl font-bold">{formatINR(product.price)}</div></div>
                     <span className="text-xs font-semibold text-success">{product.status}</span>
                   </div>
                 </div>

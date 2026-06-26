@@ -48,7 +48,7 @@ export function ProductCard({ product }: { product: Product }) {
 
         <div className="mt-5 flex items-end justify-between">
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Starting at</div>
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Price</div>
             <div className="text-xl font-bold text-foreground">{formatUSD(product.price)}</div>
           </div>
           <span className={`text-[11px] font-semibold uppercase tracking-wider ${
@@ -61,14 +61,14 @@ export function ProductCard({ product }: { product: Product }) {
 
         <div className="mt-4 grid grid-cols-2 gap-2">
           <Link to="/products/$id" params={{ id: product.id }} className="inline-flex items-center justify-center gap-1.5 border border-border px-3 py-2 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:text-primary">
-            Details <ArrowRight className="h-3 w-3" />
+            View <ArrowRight className="h-3 w-3" />
           </Link>
           <button
             disabled={!inStock}
             onClick={addToCart}
             className="interactive-sheen inline-flex items-center justify-center gap-1.5 bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground hover:-translate-y-0.5 hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
           >
-            <ShoppingCart className="h-3 w-3" /> {user ? "Add" : "Sign in"}
+            <ShoppingCart className="h-3 w-3" /> {user ? "Add to cart" : "Sign in"}
           </button>
         </div>
       </div>

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 const NAV = [
   { to: "/", label: "Home" },
-  { to: "/products", label: "Products" },
+  { to: "/products", label: "Shop" },
   { to: "/admin", label: "Admin" },
 ];
 
@@ -27,12 +27,12 @@ export function Navbar() {
       <div className="hidden border-b border-border/60 bg-secondary text-secondary-foreground md:block">
         <div className="container-page flex h-9 items-center justify-between text-xs">
           <div className="flex items-center gap-6 opacity-80">
-            <span className="flex items-center gap-2"><Phone className="h-3 w-3" /> +91 22 6100 4500 · 24/7 Industrial Support</span>
-            <span>ISO 9001:2015 Certified Supply Chain</span>
+            <span className="flex items-center gap-2"><Phone className="h-3 w-3" /> Help: +91 22 6100 4500 (24/7)</span>
+            <span>Free delivery on orders above ₹50,000</span>
           </div>
           <div className="flex items-center gap-6 opacity-80">
             <span>Ship to: India · INR ₹</span>
-            <Link to="/admin" className="hover:text-accent">Procurement Portal</Link>
+            <Link to="/admin" className="hover:text-accent">Admin Panel</Link>
           </div>
         </div>
       </div>
@@ -46,7 +46,7 @@ export function Navbar() {
           </div>
           <div className="leading-tight">
             <div className="text-base font-bold tracking-tight">FERROCORE</div>
-            <div className="hidden text-[10px] uppercase tracking-[0.18em] text-muted-foreground sm:block">Industrial Supply Co.</div>
+            <div className="hidden text-[10px] uppercase tracking-[0.18em] text-muted-foreground sm:block">Industrial Store</div>
           </div>
         </Link>
 
@@ -69,7 +69,7 @@ export function Navbar() {
           <div className="relative ml-auto max-w-md">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
-              placeholder="Search SKU, product, or specification…"
+              placeholder="Search for products…"
               className="w-full border border-input bg-surface py-2 pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary focus:shadow-sm"
             />
           </div>
@@ -139,7 +139,7 @@ export function Navbar() {
           )}
 
           <a href="#quote" className="interactive-sheen hidden bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:-translate-y-0.5 hover:bg-primary/90 md:inline-block">
-            Request Quote
+            Get a Quote
           </a>
           <button onClick={() => setOpen(!open)} className="lg:hidden border border-border p-2" aria-label="Menu">
             {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -153,7 +153,7 @@ export function Navbar() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               autoFocus
-              placeholder="Search products, SKU, specifications..."
+              placeholder="Search for products..."
               className="w-full border border-input bg-surface py-2.5 pl-9 pr-9 text-sm focus:border-primary focus:outline-none"
             />
             <button onClick={() => setSearchOpen(false)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1" aria-label="Close search">
