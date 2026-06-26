@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 const NAV = [
   { to: "/", label: "Home" },
-  { to: "/products", label: "Products" },
+  { to: "/products", label: "Shop" },
   { to: "/admin", label: "Admin" },
 ];
 
