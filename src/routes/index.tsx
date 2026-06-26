@@ -283,7 +283,7 @@ function ProductCarousel() {
                   <div className="absolute left-0 top-0 bg-copper px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-primary-foreground">{product.code}</div>
                   <ProductImage image={product.image} className="aspect-[4/3]" />
                   <div className="mt-4 grid grid-cols-[1fr_auto] items-end gap-4 border-t border-border pt-4 text-foreground">
-                    <div><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Enterprise price</div><div className="text-2xl font-bold">{formatINR(product.price)}</div></div>
+                    <div><div className="text-[10px] uppercase tracking-widest text-muted-foreground">Price</div><div className="text-2xl font-bold">{formatINR(product.price)}</div></div>
                     <span className="text-xs font-semibold text-success">{product.status}</span>
                   </div>
                 </div>
