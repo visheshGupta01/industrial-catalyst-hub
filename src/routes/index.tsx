@@ -51,7 +51,7 @@ function Home() {
 
       {/* CATEGORIES */}
       <section className="container-page py-20">
-        <SectionHeader eyebrow="Product Catalog" title="Categories We Supply" />
+        <SectionHeader eyebrow="Browse" title="Shop by Category" />
         <div className="motion-stagger mt-10 grid gap-4 md:grid-cols-3 lg:grid-cols-6">
           {categories.map((c, i) => (
             <Link
