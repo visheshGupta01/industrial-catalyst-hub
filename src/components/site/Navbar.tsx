@@ -20,6 +20,7 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [catOpen, setCatOpen] = useState(false);
 
   const initials = user ? user.name.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase() : "";
 
