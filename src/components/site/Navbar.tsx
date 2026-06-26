@@ -1,8 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ShoppingCart, Search, Menu, Phone, X, User as UserIcon, LogOut, Package, Heart, MapPin, ChevronRight } from "lucide-react";
+import { ShoppingCart, Search, Menu, Phone, X, User as UserIcon, LogOut, Package, Heart, MapPin, ChevronRight, ChevronDown, LayoutGrid } from "lucide-react";
 import { useState } from "react";
 import { useCart, cartTotals, cartStore } from "@/lib/cart-store";
 import { useAuth, authStore } from "@/lib/auth-store";
+import { categories } from "@/lib/mock-data";
 import { toast } from "sonner";
 
 const NAV = [
