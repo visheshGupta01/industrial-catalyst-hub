@@ -116,17 +116,17 @@ function Home() {
           </div>
           <div className="relative">
             <div className="border border-border bg-card p-8 md:p-10">
-              <div className="eyebrow">Procurement Toolkit</div>
-              <h3 className="mt-3 text-2xl font-bold leading-tight">Volume pricing &<br />enterprise terms.</h3>
+              <div className="eyebrow">Business Account Perks</div>
+              <h3 className="mt-3 text-2xl font-bold leading-tight">Better prices for<br />bigger orders.</h3>
               <p className="mt-4 text-sm text-muted-foreground">
-                Get tier discounts, framework agreements, and Net-30 terms for qualifying business accounts.
+                Open a free business account to unlock bulk discounts, flexible payment options and a dedicated contact.
               </p>
               <div className="mt-6 divide-y divide-border border-y border-border">
                 {[
-                  ["Annual contract volume", "$50K+"],
-                  ["Payment terms", "Net-30 / LC available"],
-                  ["Dedicated engineer", "Included"],
-                  ["Compliance documentation", "Pre-shipment"],
+                  ["Yearly purchases above", "₹40 lakh+"],
+                  ["Pay later option", "Available (30 days)"],
+                  ["Personal contact", "Included"],
+                  ["Product certificates", "Sent with order"],
                 ].map(([k, v]) => (
                   <div key={k} className="flex items-center justify-between py-3 text-sm">
                     <span className="text-muted-foreground">{k}</span>
@@ -135,7 +135,7 @@ function Home() {
                 ))}
               </div>
               <button className="mt-6 w-full bg-secondary px-6 py-3 text-sm font-semibold uppercase tracking-wider text-secondary-foreground hover:bg-secondary/90">
-                Open business account
+                Open a business account
               </button>
             </div>
           </div>
