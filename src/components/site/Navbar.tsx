@@ -153,7 +153,7 @@ export function Navbar() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               autoFocus
-              placeholder="Search products, SKU, specifications..."
+              placeholder="Search for products..."
               className="w-full border border-input bg-surface py-2.5 pl-9 pr-9 text-sm focus:border-primary focus:outline-none"
             />
             <button onClick={() => setSearchOpen(false)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1" aria-label="Close search">
