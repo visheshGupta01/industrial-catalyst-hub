@@ -75,9 +75,9 @@ function Home() {
       <section className="border-y border-border bg-surface">
         <div className="container-page py-20">
           <div className="flex flex-wrap items-end justify-between gap-4">
-            <SectionHeader eyebrow="Featured" title="Top Industrial Products" />
+            <SectionHeader eyebrow="Featured" title="Popular Products" />
             <Link to="/products" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:gap-2 transition-all">
-              View entire catalog <ArrowRight className="h-4 w-4" />
+              See all products <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
           <div className="motion-stagger mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
