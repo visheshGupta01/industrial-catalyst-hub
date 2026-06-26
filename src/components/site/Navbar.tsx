@@ -1,8 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ShoppingCart, Search, Menu, Phone, X, User as UserIcon, LogOut, Package, Heart, MapPin, ChevronRight } from "lucide-react";
+import { ShoppingCart, Search, Menu, Phone, X, User as UserIcon, LogOut, Package, Heart, MapPin, ChevronRight, ChevronDown, LayoutGrid } from "lucide-react";
 import { useState } from "react";
 import { useCart, cartTotals, cartStore } from "@/lib/cart-store";
 import { useAuth, authStore } from "@/lib/auth-store";
+import { categories } from "@/lib/mock-data";
 import { toast } from "sonner";
 
 const NAV = [
@@ -19,6 +20,7 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [catOpen, setCatOpen] = useState(false);
 
   const initials = user ? user.name.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase() : "";
 
@@ -63,6 +65,44 @@ export function Navbar() {
               </Link>
             );
           })}
+          <div
+            className="relative"
+            onMouseEnter={() => setCatOpen(true)}
+            onMouseLeave={() => setCatOpen(false)}
+          >
+            <button
+              onClick={() => setCatOpen((v) => !v)}
+              className="story-link inline-flex items-center gap-1 px-4 py-2 text-sm font-medium text-foreground/80 hover:text-primary"
+            >
+              Categories <ChevronDown className={`h-3.5 w-3.5 transition-transform ${catOpen ? "rotate-180" : ""}`} />
+            </button>
+            {catOpen && (
+              <div className="absolute left-0 top-full z-50 w-[520px] border border-border bg-card premium-shadow animate-fade-in">
+                <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-2.5">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    <LayoutGrid className="h-3.5 w-3.5 text-primary" /> Shop by category
+                  </div>
+                  <Link to="/products" onClick={() => setCatOpen(false)} className="text-xs font-semibold text-primary hover:underline">
+                    View all
+                  </Link>
+                </div>
+                <div className="grid grid-cols-2 gap-px bg-border">
+                  {categories.map((c) => (
+                    <Link
+                      key={c}
+                      to="/products"
+                      search={{ category: c }}
+                      onClick={() => setCatOpen(false)}
+                      className="group flex items-center justify-between bg-card px-4 py-3 text-sm font-medium transition hover:bg-surface hover:text-primary"
+                    >
+                      <span>{c}</span>
+                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </nav>
 
         <div className="hidden flex-1 lg:block">
@@ -181,6 +221,20 @@ export function Navbar() {
                 {n.label}<ChevronRight className="h-4 w-4 text-muted-foreground" />
               </Link>
             ))}
+            <div className="mt-6">
+              <div className="eyebrow mb-2 flex items-center gap-2"><LayoutGrid className="h-3.5 w-3.5 text-primary" /> Shop by category</div>
+              {categories.map((c) => (
+                <Link
+                  key={c}
+                  to="/products"
+                  search={{ category: c }}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center justify-between border-b border-border py-3 text-sm font-medium"
+                >
+                  {c}<ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Link>
+              ))}
+            </div>
             {user ? (
               <div className="mt-6">
                 <div className="eyebrow mb-2">My account</div>
