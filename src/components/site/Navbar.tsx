@@ -65,6 +65,44 @@ export function Navbar() {
               </Link>
             );
           })}
+          <div
+            className="relative"
+            onMouseEnter={() => setCatOpen(true)}
+            onMouseLeave={() => setCatOpen(false)}
+          >
+            <button
+              onClick={() => setCatOpen((v) => !v)}
+              className="story-link inline-flex items-center gap-1 px-4 py-2 text-sm font-medium text-foreground/80 hover:text-primary"
+            >
+              Categories <ChevronDown className={`h-3.5 w-3.5 transition-transform ${catOpen ? "rotate-180" : ""}`} />
+            </button>
+            {catOpen && (
+              <div className="absolute left-0 top-full z-50 w-[520px] border border-border bg-card premium-shadow animate-fade-in">
+                <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-2.5">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    <LayoutGrid className="h-3.5 w-3.5 text-primary" /> Shop by category
+                  </div>
+                  <Link to="/products" onClick={() => setCatOpen(false)} className="text-xs font-semibold text-primary hover:underline">
+                    View all
+                  </Link>
+                </div>
+                <div className="grid grid-cols-2 gap-px bg-border">
+                  {categories.map((c) => (
+                    <Link
+                      key={c}
+                      to="/products"
+                      search={{ category: c }}
+                      onClick={() => setCatOpen(false)}
+                      className="group flex items-center justify-between bg-card px-4 py-3 text-sm font-medium transition hover:bg-surface hover:text-primary"
+                    >
+                      <span>{c}</span>
+                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </nav>
 
         <div className="hidden flex-1 lg:block">
