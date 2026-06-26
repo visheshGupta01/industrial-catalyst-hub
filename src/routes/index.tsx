@@ -255,25 +255,25 @@ function ProductCarousel() {
             <div className="container-page relative grid items-center gap-8 py-14 md:py-20 lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.8fr)] lg:gap-16">
               <div className="min-w-0">
                 <div className="inline-flex items-center gap-2 border border-secondary-foreground/20 bg-secondary-foreground/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
-                  <span className="h-1.5 w-1.5 rounded-full bg-accent" /> Featured procurement pick · {product.category}
+                  <span className="h-1.5 w-1.5 rounded-full bg-accent" /> Featured · {product.category}
                 </div>
                 <h1 className="mt-6 text-4xl font-bold leading-[1.06] tracking-tight md:text-5xl lg:text-6xl">
                   {product.name}
                 </h1>
                 <p className="mt-5 max-w-xl text-base leading-relaxed opacity-75 md:text-lg">
-                  {product.shortDescription} Qualified for enterprise supply programs with documentation, installation, and lifecycle support.
+                  {product.shortDescription} Comes with full setup help and after-sales support.
                 </p>
                 <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-xs opacity-80">
                   {product.features.slice(0, 3).map((feature) => <span key={feature} className="flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5 text-steel" />{feature}</span>)}
                 </div>
                 <div className="mt-8 flex flex-wrap items-center gap-3">
                   <Link to="/products/$id" params={{ id: product.id }} className="interactive-sheen inline-flex items-center gap-2 bg-accent px-6 py-3.5 text-sm font-semibold uppercase tracking-wider text-accent-foreground hover:-translate-y-0.5 hover:bg-accent/90">
-                    View product <ArrowRight className="h-4 w-4" />
+                    View details <ArrowRight className="h-4 w-4" />
                   </Link>
                   {user ? (
                     <button onClick={() => cartStore.add(product)} className="inline-flex items-center gap-2 border border-secondary-foreground/30 px-6 py-3.5 text-sm font-semibold uppercase tracking-wider hover:border-accent hover:text-accent"><ShoppingCart className="h-4 w-4" /> Add to cart</button>
                   ) : (
-                    <Link to="/auth" className="inline-flex items-center gap-2 border border-secondary-foreground/30 px-6 py-3.5 text-sm font-semibold uppercase tracking-wider hover:border-accent hover:text-accent">Sign in to purchase</Link>
+                    <Link to="/auth" className="inline-flex items-center gap-2 border border-secondary-foreground/30 px-6 py-3.5 text-sm font-semibold uppercase tracking-wider hover:border-accent hover:text-accent">Sign in to buy</Link>
                   )}
                 </div>
               </div>
