@@ -184,21 +184,21 @@ function Home() {
       <section id="quote" className="border-t border-border bg-surface">
         <div className="container-page grid gap-10 py-20 lg:grid-cols-2 lg:items-center">
           <div>
-            <div className="eyebrow">Talk to procurement</div>
+            <div className="eyebrow">Get In Touch</div>
             <h2 className="mt-3 text-3xl font-bold leading-tight md:text-4xl">
-              Request a quote for your next industrial program.
+              Tell us what you need — we'll send a price.
             </h2>
             <p className="mt-4 max-w-md text-sm text-muted-foreground">
-              Share your specifications, quantities, and delivery requirements. Our engineers respond within one business day with a fully-documented proposal.
+              Share a few details about your requirement. Our team gets back to you within one working day with a full quote.
             </p>
           </div>
           <form className="grid gap-3 border border-border bg-card p-6 md:grid-cols-2">
-            <Input label="Company" placeholder="Acme Manufacturing Ltd." />
-            <Input label="Industry" placeholder="Aerospace" />
-            <Input label="Work email" placeholder="procurement@acme.com" />
-            <Input label="Phone" placeholder="+1 555 000 0000" />
+            <Input label="Company name" placeholder="Your company" />
+            <Input label="What you do" placeholder="e.g. Car parts maker" />
+            <Input label="Work email" placeholder="you@company.com" />
+            <Input label="Phone" placeholder="+91 98XXX XXXXX" />
             <div className="md:col-span-2">
-              <Input label="Requirements" placeholder="Equipment, quantities, delivery window…" textarea />
+              <Input label="What do you need?" placeholder="Tell us the product, quantity and when you need it…" textarea />
             </div>
             <button type="button" className="md:col-span-2 bg-primary px-6 py-3 text-sm font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90">
               Send request
