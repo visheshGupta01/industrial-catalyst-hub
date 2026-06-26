@@ -27,12 +27,12 @@ export function Navbar() {
       <div className="hidden border-b border-border/60 bg-secondary text-secondary-foreground md:block">
         <div className="container-page flex h-9 items-center justify-between text-xs">
           <div className="flex items-center gap-6 opacity-80">
-            <span className="flex items-center gap-2"><Phone className="h-3 w-3" /> +91 22 6100 4500 · 24/7 Industrial Support</span>
-            <span>ISO 9001:2015 Certified Supply Chain</span>
+            <span className="flex items-center gap-2"><Phone className="h-3 w-3" /> Help: +91 22 6100 4500 (24/7)</span>
+            <span>Free delivery on orders above ₹50,000</span>
           </div>
           <div className="flex items-center gap-6 opacity-80">
             <span>Ship to: India · INR ₹</span>
-            <Link to="/admin" className="hover:text-accent">Procurement Portal</Link>
+            <Link to="/admin" className="hover:text-accent">Admin Panel</Link>
           </div>
         </div>
       </div>
