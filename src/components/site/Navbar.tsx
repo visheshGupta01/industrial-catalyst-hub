@@ -221,6 +221,20 @@ export function Navbar() {
                 {n.label}<ChevronRight className="h-4 w-4 text-muted-foreground" />
               </Link>
             ))}
+            <div className="mt-6">
+              <div className="eyebrow mb-2 flex items-center gap-2"><LayoutGrid className="h-3.5 w-3.5 text-primary" /> Shop by category</div>
+              {categories.map((c) => (
+                <Link
+                  key={c}
+                  to="/products"
+                  search={{ category: c }}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center justify-between border-b border-border py-3 text-sm font-medium"
+                >
+                  {c}<ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Link>
+              ))}
+            </div>
             {user ? (
               <div className="mt-6">
                 <div className="eyebrow mb-2">My account</div>
