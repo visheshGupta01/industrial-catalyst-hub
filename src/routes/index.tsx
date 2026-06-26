@@ -62,7 +62,7 @@ function Home() {
             >
               <Factory className="h-7 w-7 text-primary" />
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Cat. 0{i + 1}</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Category {i + 1}</div>
                 <div className="mt-1 text-sm font-semibold leading-snug">{c}</div>
               </div>
               <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground transition group-hover:translate-x-1 group-hover:text-primary" />
