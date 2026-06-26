@@ -139,7 +139,7 @@ export function Navbar() {
           )}
 
           <a href="#quote" className="interactive-sheen hidden bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:-translate-y-0.5 hover:bg-primary/90 md:inline-block">
-            Request Quote
+            Get a Quote
           </a>
           <button onClick={() => setOpen(!open)} className="lg:hidden border border-border p-2" aria-label="Menu">
             {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
