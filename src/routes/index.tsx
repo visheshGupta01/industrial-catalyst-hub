@@ -34,10 +34,10 @@ function Home() {
       <section className="border-b border-border bg-surface">
         <div className="container-page motion-stagger grid grid-cols-2 gap-6 py-8 md:grid-cols-4">
           {[
-            { icon: ShieldCheck, label: "ISO 9001:2015 Certified" },
-            { icon: Truck, label: "Worldwide Logistics" },
-            { icon: Wrench, label: "Installation & Service" },
-            { icon: HeadphonesIcon, label: "24/7 Technical Support" },
+            { icon: ShieldCheck, label: "Verified Quality" },
+            { icon: Truck, label: "Ships Worldwide" },
+            { icon: Wrench, label: "Setup & Service Help" },
+            { icon: HeadphonesIcon, label: "Support Anytime" },
           ].map(({ icon: Icon, label }) => (
             <div key={label} className="flex items-center gap-3">
               <div className="grid h-10 w-10 shrink-0 place-items-center bg-primary/10 text-primary">
