@@ -46,7 +46,7 @@ export function Navbar() {
           </div>
           <div className="leading-tight">
             <div className="text-base font-bold tracking-tight">FERROCORE</div>
-            <div className="hidden text-[10px] uppercase tracking-[0.18em] text-muted-foreground sm:block">Industrial Supply Co.</div>
+            <div className="hidden text-[10px] uppercase tracking-[0.18em] text-muted-foreground sm:block">Industrial Store</div>
           </div>
         </Link>
 
