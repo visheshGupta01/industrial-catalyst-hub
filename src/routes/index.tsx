@@ -145,7 +145,7 @@ function Home() {
       {/* INDUSTRIES */}
       <section className="border-y border-border bg-secondary text-secondary-foreground">
         <div className="container-page py-20">
-          <SectionHeader eyebrow="Industries We Serve" title="Trusted by demanding sectors." dark />
+          <SectionHeader eyebrow="Who We Help" title="Built for every kind of business." dark />
           <div className="mt-10 grid grid-cols-2 gap-px bg-white/10 sm:grid-cols-4">
             {industries.map((ind) => {
               const Icon = (Lucide as unknown as Record<string, React.ComponentType<{ className?: string }>>)[ind.icon] ?? Factory;
