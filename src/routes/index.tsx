@@ -90,18 +90,17 @@ function Home() {
       <section className="container-page py-20">
         <div className="grid gap-12 lg:grid-cols-2">
           <div>
-            <SectionHeader eyebrow="Why Choose FerroCore" title="Enterprise procurement, engineered." />
+            <SectionHeader eyebrow="Why Choose Us" title="Buying made simple." />
             <p className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground">
-              Four decades supplying tier-1 manufacturers, energy operators, and infrastructure
-              programs. Every SKU is qualified through our supplier audit framework with full
-              documentation traceability.
+              We've spent 40+ years helping factories, energy companies and builders get the
+              equipment they need — quickly, with paperwork sorted and real people to help.
             </p>
             <div className="mt-8 space-y-5">
               {[
-                { icon: Award, title: "Tier-1 Qualified Supply Chain", desc: "Every supplier audited under ISO 9001, with full MTC and CoC available before purchase." },
-                { icon: ShieldCheck, title: "Compliance-First Sourcing", desc: "CE, ATEX, IECEx, REACH, RoHS, and OEM-traceable components for regulated industries." },
-                { icon: Wrench, title: "Installation, Service & Spares", desc: "Lifecycle support including commissioning, training, preventative maintenance, and OEM spares." },
-                { icon: HeadphonesIcon, title: "Dedicated Account Managers", desc: "Named engineers for capex equipment programs, with SLA-backed response times." },
+                { icon: Award, title: "Trusted Suppliers", desc: "We check every supplier so you get genuine, quality-tested products every time." },
+                { icon: ShieldCheck, title: "All Documents Included", desc: "Certificates and test reports are shared up front, so there are no surprises." },
+                { icon: Wrench, title: "Help With Setup & Spares", desc: "Our team helps with installation, training and finding spare parts later on." },
+                { icon: HeadphonesIcon, title: "A Real Person To Talk To", desc: "Every business account gets a dedicated contact who answers within hours, not days." },
               ].map(({ icon: Icon, title, desc }) => (
                 <div key={title} className="flex gap-4">
                   <div className="grid h-11 w-11 shrink-0 place-items-center bg-primary text-primary-foreground">
