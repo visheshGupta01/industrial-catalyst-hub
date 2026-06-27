@@ -177,7 +177,11 @@ function ProductsPage() {
               </select>
             </div>
 
-            {filtered.length === 0 ? (
+            {loading ? (
+              <div className="mt-6 flex items-center justify-center gap-2 border border-dashed border-border bg-surface p-16 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading catalog from backend…
+              </div>
+            ) : filtered.length === 0 ? (
               <div className="mt-6 border border-dashed border-border bg-surface p-16 text-center">
                 <h3 className="text-lg font-semibold">No products found</h3>
                 <p className="mt-2 text-sm text-muted-foreground">Try adjusting your filters or clearing your search.</p>
