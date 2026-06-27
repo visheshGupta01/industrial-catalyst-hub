@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { loginRequest, registerRequest, meRequest, logoutRequest, type ApiUser } from "./api/auth";
 import { tokenStore } from "./api/client";
+import { cartStore } from "./cart-store";
 
 export type AuthUser = {
   name: string;
