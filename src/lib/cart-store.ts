@@ -65,12 +65,6 @@ export const cartStore = {
     saved = saved.filter((i) => i.product.id !== id);
     const existing = cart.find((i) => i.product.id === id);
     if (existing) existing.quantity += item.quantity;
-  moveToCart(id: string) {
-    const item = saved.find((i) => i.product.id === id);
-    if (!item) return;
-    saved = saved.filter((i) => i.product.id !== id);
-    const existing = cart.find((i) => i.product.id === id);
-    if (existing) existing.quantity += item.quantity;
     else cart = [...cart, item];
     cart = [...cart];
     emit();
