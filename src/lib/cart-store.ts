@@ -1,5 +1,8 @@
 import { useSyncExternalStore } from "react";
 import type { Product } from "./mock-data";
+import { cartApi } from "./api/cart";
+import { fetchProducts } from "./api/products";
+import { tokenStore } from "./api/client";
 
 export type CartItem = { product: Product; quantity: number };
 
@@ -35,19 +38,24 @@ export const cartStore = {
       drawerOpen = true;
       emitDrawer();
     }
+    if (tokenStore.get()) void cartApi.add(product.id, quantity);
   },
   remove(id: string) {
     cart = cart.filter((i) => i.product.id !== id);
     emit();
+    if (tokenStore.get()) void cartApi.remove(id);
   },
   setQty(id: string, quantity: number) {
-    cart = cart.map((i) => (i.product.id === id ? { ...i, quantity: Math.max(1, quantity) } : i));
+    const q = Math.max(1, quantity);
+    cart = cart.map((i) => (i.product.id === id ? { ...i, quantity: q } : i));
     emit();
+    if (tokenStore.get()) void cartApi.update(id, q);
   },
   saveForLater(id: string) {
     const item = cart.find((i) => i.product.id === id);
     if (!item) return;
     cart = cart.filter((i) => i.product.id !== id);
+    if (tokenStore.get()) void cartApi.remove(id);
     if (!saved.find((s) => s.product.id === id)) saved = [...saved, item];
     emit();
   },
