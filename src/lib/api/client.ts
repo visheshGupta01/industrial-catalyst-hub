@@ -70,10 +70,10 @@ export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Prom
   }
 
   if (!res.ok) {
-    const msg =
-      (data && typeof data === "object" && "message" in (data as Record<string, unknown>) &&
-        String((data as Record<string, unknown>).message)) ||
-      `Request failed (${res.status})`;
+    let msg = `Request failed (${res.status})`;
+    if (data && typeof data === "object" && "message" in (data as Record<string, unknown>)) {
+      msg = String((data as Record<string, unknown>).message);
+    }
     throw new ApiError(res.status, msg, data);
   }
   return data as T;
