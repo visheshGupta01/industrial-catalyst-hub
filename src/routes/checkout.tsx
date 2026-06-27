@@ -216,7 +216,9 @@ function Checkout() {
                 Continue <ArrowRight className="h-4 w-4" />
               </button>
             ) : (
-              <button onClick={placeOrder} className="ml-auto inline-flex items-center gap-2 bg-accent px-6 py-3 text-xs font-semibold uppercase tracking-wider text-accent-foreground hover:bg-accent/90">
+              <button onClick={placeOrderAction} disabled={placing} className="ml-auto inline-flex items-center gap-2 bg-accent px-6 py-3 text-xs font-semibold uppercase tracking-wider text-accent-foreground hover:bg-accent/90 disabled:opacity-60">
+                <CheckCircle2 className="h-4 w-4" /> {placing ? "Placing…" : "Place Order"}
+              </button>
                 <CheckCircle2 className="h-4 w-4" /> Place Order
               </button>
             )}
