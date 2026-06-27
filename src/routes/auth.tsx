@@ -19,24 +19,30 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const navigate = useNavigate();
 
-  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    if (mode === "signin") {
-      const email = String(fd.get("email") || "");
-      if (!email) return toast.error("Please enter your email");
-      authStore.login(email);
-      toast.success("Welcome back");
-    } else {
-      authStore.signup({
-        name: String(fd.get("name") || "Procurement Lead"),
-        email: String(fd.get("email") || ""),
-        company: String(fd.get("company") || ""),
-        phone: String(fd.get("phone") || ""),
-      });
-      toast.success("Business account created");
+    const email = String(fd.get("email") || "");
+    const password = String(fd.get("password") || "");
+    if (!email || !password) return toast.error("Please enter your email and password");
+    try {
+      if (mode === "signin") {
+        await authStore.login(email, password);
+        toast.success("Welcome back");
+      } else {
+        await authStore.signup({
+          name: String(fd.get("name") || "Procurement Lead"),
+          email,
+          password,
+          company: String(fd.get("company") || ""),
+          phone: String(fd.get("phone") || ""),
+        });
+        toast.success("Business account created");
+      }
+      navigate({ to: "/profile" });
+    } catch (err) {
+      toast.error((err as Error).message || "Authentication failed");
     }
-    navigate({ to: "/profile" });
   };
 
   return (
