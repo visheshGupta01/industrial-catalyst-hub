@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { User, Building2, Mail, Phone, MapPin, Package, Heart, LogOut, FileText, Pencil, ShieldCheck, Menu, X } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { useAuth, authStore } from "@/lib/auth-store";
-import { orders } from "@/lib/mock-data";
+import { orders as fallbackOrders } from "@/lib/mock-data";
+import { listOrders } from "@/lib/api/orders";
 import { formatINR } from "@/lib/format";
 import { toast } from "sonner";
 
@@ -23,6 +24,14 @@ function ProfilePage() {
   const [tab, setTab] = useState<"profile" | "orders" | "wishlist" | "addresses">("profile");
   const [edit, setEdit] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
+  const [orders, setOrders] = useState(fallbackOrders);
+
+  useEffect(() => {
+    if (!user) return;
+    listOrders().then((list) => {
+      if (Array.isArray(list) && list.length) setOrders(list as typeof fallbackOrders);
+    }).catch(() => {});
+  }, [user]);
 
   useEffect(() => {
     if (user === null) navigate({ to: "/auth" });
