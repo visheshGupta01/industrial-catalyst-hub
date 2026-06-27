@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from "react";
 import { Search, SlidersHorizontal, X, Loader2 } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { ProductCard } from "@/components/site/ProductCard";
-import { products as fallbackProducts, categories as fallbackCategories, type Product } from "@/lib/mock-data";
+import { products as fallbackProducts, type Product } from "@/lib/mock-data";
 import { fetchProducts } from "@/lib/api/products";
 
 export const Route = createFileRoute("/products/")({
