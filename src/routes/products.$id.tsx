@@ -36,18 +36,44 @@ function ProductDetail() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    cartStore.trackView(product.id);
-    setActiveImg(0);
-    setQty(1);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [product.id]);
+    let active = true;
+    setLoading(true);
+    Promise.all([fetchProduct(id), fetchProducts()]).then(([p, list]) => {
+      if (!active) return;
+      setProduct(p ?? null);
+      if (list.length) setCatalog(list);
+      setLoading(false);
+      if (p) cartStore.trackView(p.id);
+      setActiveImg(0);
+      setQty(1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    return () => { active = false; };
+  }, [id]);
 
-  const related = products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
+  if (loading || !product) {
+    return (
+      <SiteLayout>
+        <div className="container-page flex items-center justify-center gap-2 py-32 text-sm text-muted-foreground">
+          {loading ? (
+            <><Loader2 className="h-4 w-4 animate-spin" /> Loading product…</>
+          ) : (
+            <>
+              <span>Product not found.</span>
+              <Link to="/products" className="text-primary hover:underline">Back to catalog</Link>
+            </>
+          )}
+        </div>
+      </SiteLayout>
+    );
+  }
+
+  const related = catalog.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
   const recentProducts = recent
-    .filter((id) => id !== product.id)
-    .map((id) => products.find((p) => p.id === id))
+    .filter((rid) => rid !== product.id)
+    .map((rid) => catalog.find((p) => p.id === rid))
     .filter(Boolean)
-    .slice(0, 4) as typeof products;
+    .slice(0, 4) as Product[];
 
   const inStock = product.status !== "Out of Stock";
 
