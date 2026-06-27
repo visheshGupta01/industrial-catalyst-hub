@@ -1,4 +1,7 @@
 import { useSyncExternalStore } from "react";
+import { loginRequest, registerRequest, meRequest, logoutRequest, type ApiUser } from "./api/auth";
+import { tokenStore } from "./api/client";
+import { cartStore } from "./cart-store";
 
 export type AuthUser = {
   name: string;
@@ -15,7 +18,7 @@ const KEY = "ferrocore_auth_user";
 let current: AuthUser | null = null;
 const listeners = new Set<() => void>();
 
-function load() {
+function load(): AuthUser | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(KEY);
@@ -31,14 +34,53 @@ function persist() {
   else localStorage.removeItem(KEY);
 }
 
+function emit() { listeners.forEach((l) => l()); }
+
+function normalize(api: ApiUser, fallback?: Partial<AuthUser>): AuthUser {
+  return {
+    name: api.name || fallback?.name || api.email.split("@")[0],
+    email: api.email,
+    company: api.company ?? fallback?.company ?? "—",
+    phone: api.phone ?? fallback?.phone ?? "",
+    role: api.role ?? fallback?.role ?? "Procurement Manager",
+    gstin: api.gstin ?? fallback?.gstin ?? "—",
+    address: api.address ?? fallback?.address ?? "—",
+    avatar: api.avatar ?? fallback?.avatar,
+  };
+}
+
 current = load();
 
-function emit() { listeners.forEach((l) => l()); }
+// On boot, if we have a token try to refresh the profile from the backend.
+// Silently keep the cached user if the backend is offline.
+if (typeof window !== "undefined" && tokenStore.get()) {
+  void meRequest()
+    .then((u) => { current = normalize(u, current ?? undefined); persist(); emit(); void cartStore.hydrateFromServer(); })
+    .catch(() => { /* keep cached */ });
+}
 
 export const authStore = {
   subscribe(l: () => void) { listeners.add(l); return () => listeners.delete(l); },
   get(): AuthUser | null { return current; },
-  login(email: string, name?: string) {
+
+  async login(email: string, password: string) {
+    const { user } = await loginRequest(email, password);
+    current = normalize(user);
+    persist();
+    emit();
+    void cartStore.hydrateFromServer();
+  },
+
+  async signup(data: { name: string; email: string; password: string; company?: string; phone?: string }) {
+    const { user } = await registerRequest(data);
+    current = normalize(user, data);
+    persist();
+    emit();
+    void cartStore.hydrateFromServer();
+  },
+
+  /** Local demo fallback — used by SSO buttons that don't have credentials in this prototype */
+  loginLocal(email: string, name?: string) {
     current = {
       name: name || email.split("@")[0].replace(/\W+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
       email,
@@ -51,26 +93,20 @@ export const authStore = {
     persist();
     emit();
   },
-  signup(data: { name: string; email: string; company: string; phone: string }) {
-    current = {
-      name: data.name,
-      email: data.email,
-      company: data.company,
-      phone: data.phone,
-      role: "Procurement Manager",
-      gstin: "27ABCDE1234F1Z5",
-      address: "—",
-    };
-    persist();
-    emit();
-  },
+
   update(patch: Partial<AuthUser>) {
     if (!current) return;
     current = { ...current, ...patch };
     persist();
     emit();
   },
-  logout() { current = null; persist(); emit(); },
+
+  logout() {
+    logoutRequest();
+    current = null;
+    persist();
+    emit();
+  },
 };
 
 export function useAuth() {

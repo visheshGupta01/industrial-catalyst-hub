@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Search, SlidersHorizontal, X, Loader2 } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { ProductCard } from "@/components/site/ProductCard";
-import { products, categories } from "@/lib/mock-data";
+import { products as fallbackProducts, type Product } from "@/lib/mock-data";
+import { fetchProducts } from "@/lib/api/products";
 
 export const Route = createFileRoute("/products/")({
   head: () => ({
@@ -21,6 +22,21 @@ function ProductsPage() {
   const [cat, setCat] = useState(category ?? "All");
   const [sort, setSort] = useState<"featured" | "price-asc" | "price-desc" | "name">("featured");
   const [mobileFilters, setMobileFilters] = useState(false);
+  const [products, setProducts] = useState<Product[]>(fallbackProducts);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    fetchProducts()
+      .then((list) => { if (active) setProducts(list); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  const categories = useMemo(
+    () => Array.from(new Set(products.map((p) => p.category))).sort(),
+    [products],
+  );
 
   const filtered = useMemo(() => {
     let r = products;
@@ -161,7 +177,11 @@ function ProductsPage() {
               </select>
             </div>
 
-            {filtered.length === 0 ? (
+            {loading ? (
+              <div className="mt-6 flex items-center justify-center gap-2 border border-dashed border-border bg-surface p-16 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading catalog from backend…
+              </div>
+            ) : filtered.length === 0 ? (
               <div className="mt-6 border border-dashed border-border bg-surface p-16 text-center">
                 <h3 className="text-lg font-semibold">No products found</h3>
                 <p className="mt-2 text-sm text-muted-foreground">Try adjusting your filters or clearing your search.</p>

@@ -1,5 +1,8 @@
 import { useSyncExternalStore } from "react";
 import type { Product } from "./mock-data";
+import { cartApi } from "./api/cart";
+import { fetchProducts } from "./api/products";
+import { tokenStore } from "./api/client";
 
 export type CartItem = { product: Product; quantity: number };
 
@@ -35,19 +38,24 @@ export const cartStore = {
       drawerOpen = true;
       emitDrawer();
     }
+    if (tokenStore.get()) void cartApi.add(product.id, quantity);
   },
   remove(id: string) {
     cart = cart.filter((i) => i.product.id !== id);
     emit();
+    if (tokenStore.get()) void cartApi.remove(id);
   },
   setQty(id: string, quantity: number) {
-    cart = cart.map((i) => (i.product.id === id ? { ...i, quantity: Math.max(1, quantity) } : i));
+    const q = Math.max(1, quantity);
+    cart = cart.map((i) => (i.product.id === id ? { ...i, quantity: q } : i));
     emit();
+    if (tokenStore.get()) void cartApi.update(id, q);
   },
   saveForLater(id: string) {
     const item = cart.find((i) => i.product.id === id);
     if (!item) return;
     cart = cart.filter((i) => i.product.id !== id);
+    if (tokenStore.get()) void cartApi.remove(id);
     if (!saved.find((s) => s.product.id === id)) saved = [...saved, item];
     emit();
   },
@@ -60,6 +68,7 @@ export const cartStore = {
     else cart = [...cart, item];
     cart = [...cart];
     emit();
+    if (tokenStore.get()) void cartApi.add(id, item.quantity);
   },
   removeSaved(id: string) {
     saved = saved.filter((i) => i.product.id !== id);
@@ -68,6 +77,22 @@ export const cartStore = {
   clear() {
     cart = [];
     emit();
+    if (tokenStore.get()) void cartApi.clear();
+  },
+  /** Fetch the remote cart for the signed-in user and merge with local items. */
+  async hydrateFromServer() {
+    if (!tokenStore.get()) return;
+    const [remote, catalog] = await Promise.all([cartApi.get(), fetchProducts()]);
+    const byId = new Map(catalog.map((p) => [p.id, p]));
+    const next: CartItem[] = [];
+    for (const item of remote.items) {
+      const product = byId.get(item.productId);
+      if (product) next.push({ product, quantity: item.quantity });
+    }
+    if (next.length) {
+      cart = next;
+      emit();
+    }
   },
   get() { return cart; },
   getSaved() { return saved; },
