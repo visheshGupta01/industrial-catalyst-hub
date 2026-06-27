@@ -55,7 +55,7 @@ current = load();
 // Silently keep the cached user if the backend is offline.
 if (typeof window !== "undefined" && tokenStore.get()) {
   void meRequest()
-    .then((u) => { current = normalize(u, current ?? undefined); persist(); emit(); })
+    .then((u) => { current = normalize(u, current ?? undefined); persist(); emit(); void cartStore.hydrateFromServer(); })
     .catch(() => { /* keep cached */ });
 }
 
@@ -68,6 +68,7 @@ export const authStore = {
     current = normalize(user);
     persist();
     emit();
+    void cartStore.hydrateFromServer();
   },
 
   async signup(data: { name: string; email: string; password: string; company?: string; phone?: string }) {
@@ -75,6 +76,7 @@ export const authStore = {
     current = normalize(user, data);
     persist();
     emit();
+    void cartStore.hydrateFromServer();
   },
 
   /** Local demo fallback — used by SSO buttons that don't have credentials in this prototype */
