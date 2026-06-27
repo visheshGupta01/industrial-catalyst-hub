@@ -142,7 +142,7 @@ function AuthPage() {
                   <button
                     type="button"
                     key={p}
-                    onClick={() => { authStore.login("demo@acme.com"); toast.success(`Signed in via ${p}`); navigate({ to: "/profile" }); }}
+                    onClick={() => { authStore.loginLocal("demo@acme.com"); toast.success(`Signed in via ${p}`); navigate({ to: "/profile" }); }}
                     className="border border-border bg-card px-4 py-2.5 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:text-primary"
                   >
                     {p}
