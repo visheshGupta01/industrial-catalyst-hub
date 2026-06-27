@@ -1,44 +1,21 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { Download, ShoppingCart, FileText, Minus, Plus, ShieldCheck, Truck, Award, Phone, Zap, Settings, BadgeCheck } from "lucide-react";
+import { Download, ShoppingCart, FileText, Minus, Plus, ShieldCheck, Truck, Award, Phone, Zap, Settings, BadgeCheck, Loader2 } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { ProductImage } from "@/components/site/ProductImage";
 import { ProductCard } from "@/components/site/ProductCard";
-import { getProduct, products } from "@/lib/mock-data";
+import { products, type Product } from "@/lib/mock-data";
+import { fetchProduct, fetchProducts } from "@/lib/api/products";
 import { formatUSD } from "@/lib/format";
 import { cartStore, useRecentlyViewed } from "@/lib/cart-store";
 import { useAuth } from "@/lib/auth-store";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/products/$id")({
-  loader: ({ params }) => {
-    const product = getProduct(params.id);
-    if (!product) throw notFound();
-    return { product };
-  },
-  notFoundComponent: () => (
-    <SiteLayout>
-      <div className="container-page py-24 text-center">
-        <h1 className="text-3xl font-bold">Product not found</h1>
-        <Link to="/products" className="mt-6 inline-block text-primary hover:underline">Back to catalog</Link>
-      </div>
-    </SiteLayout>
-  ),
-  errorComponent: ({ reset }) => (
-    <SiteLayout>
-      <div className="container-page py-24 text-center">
-        <h1 className="text-2xl font-bold">Something went wrong</h1>
-        <button onClick={reset} className="mt-4 bg-primary px-4 py-2 text-sm text-primary-foreground">Try again</button>
-      </div>
-    </SiteLayout>
-  ),
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: `${loaderData.product.name} — FerroCore` },
-          { name: "description", content: loaderData.product.shortDescription },
-        ]
-      : [],
+  head: ({ params }) => ({
+    meta: [
+      { title: `Product ${params.id} — FerroCore` },
+    ],
   }),
   component: ProductDetail,
 });
@@ -46,7 +23,10 @@ export const Route = createFileRoute("/products/$id")({
 const FEATURE_ICONS = [Zap, Settings, ShieldCheck, BadgeCheck];
 
 function ProductDetail() {
-  const { product } = Route.useLoaderData() as { product: NonNullable<ReturnType<typeof getProduct>> };
+  const { id } = Route.useParams();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [catalog, setCatalog] = useState<Product[]>(products);
+  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"description" | "specifications" | "features">("description");
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
