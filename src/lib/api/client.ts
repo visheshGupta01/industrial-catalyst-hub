@@ -3,22 +3,31 @@
 // Bearer token is read from localStorage on every request.
 
 export const API_BASE: string =
-  (typeof import.meta !== "undefined" && (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL) ||
-  "http://localhost:3000";
+  (typeof import.meta !== "undefined" &&
+    (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL) ||
+  "http://127.0.0.1:3000/api";
+
+  console.log(API_BASE)
 
 const TOKEN_KEY = "ferrocore_token";
 
 export const tokenStore = {
   get(): string | null {
     if (typeof window === "undefined") return null;
-    try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+    try {
+      return localStorage.getItem(TOKEN_KEY);
+    } catch {
+      return null;
+    }
   },
   set(token: string | null) {
     if (typeof window === "undefined") return;
     try {
       if (token) localStorage.setItem(TOKEN_KEY, token);
       else localStorage.removeItem(TOKEN_KEY);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   },
 };
 
@@ -66,7 +75,11 @@ export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Prom
   let data: unknown = null;
   const text = await res.text();
   if (text) {
-    try { data = JSON.parse(text); } catch { data = text; }
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
   }
 
   if (!res.ok) {

@@ -38,7 +38,7 @@ export function ProductCard({ product }: { product: Product }) {
         <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{product.shortDescription}</p>
 
         <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-1.5 border-t border-border pt-3 text-xs">
-          {product.specs.slice(0, 2).map((s) => (
+          {product.specs?.slice(0, 2).map((s) => (
             <div key={s.label} className="flex flex-col">
               <dt className="text-muted-foreground">{s.label}</dt>
               <dd className="truncate font-medium text-foreground">{s.value}</dd>

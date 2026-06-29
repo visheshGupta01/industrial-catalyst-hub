@@ -1,37 +1,34 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Search, SlidersHorizontal, X, Loader2 } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { ProductCard } from "@/components/site/ProductCard";
-import { products as fallbackProducts, type Product } from "@/lib/mock-data";
-import { fetchProducts } from "@/lib/api/products";
+import { useProducts } from "@/hooks/useProducts";
+import { ProductGridSkeleton } from "@/components/skeletons/ProductGridSkeleton";
 
 export const Route = createFileRoute("/products/")({
   head: () => ({
     meta: [
       { title: "Industrial Product Catalog — FerroCore" },
-      { name: "description", content: "Browse industrial machinery, electrical systems, automation, pneumatics, and components from qualified suppliers." },
+      {
+        name: "description",
+        content:
+          "Browse industrial machinery, electrical systems, automation, pneumatics, and components from qualified suppliers.",
+      },
     ],
   }),
   component: ProductsPage,
 });
 
 function ProductsPage() {
-  const { category, q } = Route.useSearch({ select: (s: { category?: string; q?: string }) => s }) as { category?: string; q?: string };
+  const { category, q } = Route.useSearch({
+    select: (s: { category?: string; q?: string }) => s,
+  }) as { category?: string; q?: string };
   const [search, setSearch] = useState(q ?? "");
   const [cat, setCat] = useState(category ?? "All");
   const [sort, setSort] = useState<"featured" | "price-asc" | "price-desc" | "name">("featured");
   const [mobileFilters, setMobileFilters] = useState(false);
-  const [products, setProducts] = useState<Product[]>(fallbackProducts);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    fetchProducts()
-      .then((list) => { if (active) setProducts(list); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, []);
+  const { data: products = [], isLoading, isError, error, isFetching } = useProducts();
 
   const categories = useMemo(
     () => Array.from(new Set(products.map((p) => p.category))).sort(),
@@ -43,14 +40,19 @@ function ProductsPage() {
     if (cat !== "All") r = r.filter((p) => p.category === cat);
     if (search) {
       const s = search.toLowerCase();
-      r = r.filter((p) => p.name.toLowerCase().includes(s) || p.code.toLowerCase().includes(s) || p.category.toLowerCase().includes(s));
+      r = r.filter(
+        (p) =>
+          p.name.toLowerCase().includes(s) ||
+          p.code.toLowerCase().includes(s) ||
+          p.category.toLowerCase().includes(s),
+      );
     }
     const arr = [...r];
     if (sort === "price-asc") arr.sort((a, b) => a.price - b.price);
     if (sort === "price-desc") arr.sort((a, b) => b.price - a.price);
     if (sort === "name") arr.sort((a, b) => a.name.localeCompare(b.name));
     return arr;
-  }, [cat, search, sort]);
+  }, [products, cat, search, sort]);
 
   const filterPanel = (
     <>
@@ -62,7 +64,9 @@ function ProductsPage() {
               <button
                 onClick={() => setCat(c)}
                 className={`flex w-full items-center justify-between border-l-2 px-3 py-1.5 text-left transition-colors ${
-                  cat === c ? "border-accent bg-surface font-semibold text-primary" : "border-transparent hover:border-border hover:bg-surface"
+                  cat === c
+                    ? "border-accent bg-surface font-semibold text-primary"
+                    : "border-transparent hover:border-border hover:bg-surface"
                 }`}
               >
                 <span>{c}</span>
@@ -99,9 +103,15 @@ function ProductsPage() {
       <div className="mt-6 border-t border-border pt-5">
         <h4 className="text-xs font-semibold uppercase tracking-wider">Price range (₹)</h4>
         <div className="mt-3 flex items-center gap-2 text-sm">
-          <input placeholder="Min" className="w-full border border-input bg-background px-2 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <input
+            placeholder="Min"
+            className="w-full border border-input bg-background px-2 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
           <span className="text-muted-foreground">—</span>
-          <input placeholder="Max" className="w-full border border-input bg-background px-2 py-1.5 text-sm focus:border-primary focus:outline-none" />
+          <input
+            placeholder="Max"
+            className="w-full border border-input bg-background px-2 py-1.5 text-sm focus:border-primary focus:outline-none"
+          />
         </div>
       </div>
       <div className="mt-6 border-t border-border pt-5 lg:hidden">
@@ -120,18 +130,60 @@ function ProductsPage() {
     </>
   );
 
+  if (isLoading) {
+    return (
+      <SiteLayout>
+          <section className="border-b border-border bg-surface">
+            <div className="container-page py-12">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Link to="/" className="hover:text-primary">
+                  Home
+                </Link>
+                <span>/</span>
+                <span className="text-foreground">Product Catalog</span>
+              </div>
+              <h1 className="mt-3 text-3xl font-bold md:text-4xl">Industrial Product Catalog</h1>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                {filtered.length} products across {categories.length} engineered categories — fully
+                certified, in stock, ready for global shipment.
+              </p>
+            </div>
+          </section>
+        <section className="container-page py-10">
+          <ProductGridSkeleton />
+        </section>
+      </SiteLayout>
+    );
+  }
+if (isError) {
+  return (
+    <SiteLayout>
+      <div className="container-page py-20 text-center">
+        <h2 className="text-xl font-semibold">Failed to load products</h2>
+        <p className="mt-2 text-muted-foreground">
+          {error instanceof Error ? error.message : "Something went wrong."}
+        </p>
+      </div>
+    </SiteLayout>
+  );
+}
+  
+
   return (
     <SiteLayout>
       <section className="border-b border-border bg-surface">
         <div className="container-page py-12">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Link to="/" className="hover:text-primary">Home</Link>
+            <Link to="/" className="hover:text-primary">
+              Home
+            </Link>
             <span>/</span>
             <span className="text-foreground">Product Catalog</span>
           </div>
           <h1 className="mt-3 text-3xl font-bold md:text-4xl">Industrial Product Catalog</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            {filtered.length} products across {categories.length} engineered categories — fully certified, in stock, ready for global shipment.
+            {filtered.length} products across {categories.length} engineered categories — fully
+            certified, in stock, ready for global shipment.
           </p>
         </div>
       </section>
@@ -176,44 +228,57 @@ function ProductsPage() {
                 <option value="name">Name (A–Z)</option>
               </select>
             </div>
-
-            {loading ? (
-              <div className="mt-6 flex items-center justify-center gap-2 border border-dashed border-border bg-surface p-16 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Loading catalog from backend…
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="mt-6 border border-dashed border-border bg-surface p-16 text-center">
-                <h3 className="text-lg font-semibold">No products found</h3>
-                <p className="mt-2 text-sm text-muted-foreground">Try adjusting your filters or clearing your search.</p>
-              </div>
-            ) : (
-              <div className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {filtered.map((p) => <ProductCard key={p.id} product={p} />)}
-              </div>
-            )}
+            <div className="flex items-center gap-2">{isFetching && <Spinner size="sm" />}</div>
+             <main>
+        {isLoading ? (
+          <ProductGridSkeleton />
+        ) : isError ? (
+          <ErrorState />
+        ) : filtered.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <ProductGrid products={filtered} />
+        )}
+      </main>
           </div>
         </div>
       </section>
 
       {mobileFilters && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog">
-          <div onClick={() => setMobileFilters(false)} className="absolute inset-0 bg-black/40 animate-fade-in" />
+          <div
+            onClick={() => setMobileFilters(false)}
+            className="absolute inset-0 bg-black/40 animate-fade-in"
+          />
           <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto bg-background shadow-2xl animate-slide-up">
             <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-surface px-5 py-4">
               <div className="flex items-center gap-2">
                 <SlidersHorizontal className="h-4 w-4 text-primary" />
                 <h3 className="text-sm font-semibold uppercase tracking-[0.18em]">Filter & Sort</h3>
               </div>
-              <button onClick={() => setMobileFilters(false)} className="p-1" aria-label="Close filters">
+              <button
+                onClick={() => setMobileFilters(false)}
+                className="p-1"
+                aria-label="Close filters"
+              >
                 <X className="h-5 w-5" />
               </button>
             </header>
             <div className="p-5">{filterPanel}</div>
             <footer className="sticky bottom-0 grid grid-cols-2 gap-3 border-t border-border bg-background p-4">
-              <button onClick={() => { setCat("All"); setSearch(""); }} className="border border-border px-4 py-3 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:text-primary">
+              <button
+                onClick={() => {
+                  setCat("All");
+                  setSearch("");
+                }}
+                className="border border-border px-4 py-3 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:text-primary"
+              >
                 Clear all
               </button>
-              <button onClick={() => setMobileFilters(false)} className="bg-primary px-4 py-3 text-xs font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90">
+              <button
+                onClick={() => setMobileFilters(false)}
+                className="bg-primary px-4 py-3 text-xs font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90"
+              >
                 Show {filtered.length} results
               </button>
             </footer>
