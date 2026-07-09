@@ -2,7 +2,7 @@ import type { Product } from "./product";
 import type { User } from "./user";
 
 export interface CartItem {
-  product: string | Product;
+  product: Product;
   quantity: number;
 }
 
@@ -15,4 +15,9 @@ export interface Cart {
 
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CartResponse {
+  success: boolean;
+  cart: Cart;
 }

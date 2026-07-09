@@ -7,8 +7,7 @@ export function ProductCardSkeleton() {
       <Skeleton className="h-5 w-3/4" />
       <Skeleton className="h-4 w-full" />
       <Skeleton className="h-4 w-2/3" />
-          <Skeleto
-              n className="h-10 w-full" />
+      <Skeleton className="h-10 w-full" />
     </div>
   );
 }

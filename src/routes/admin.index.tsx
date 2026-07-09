@@ -2,8 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { DollarSign, ShoppingBag, Users, Package, TrendingUp, TrendingDown, ArrowUpRight } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "recharts";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { orders, salesData, products } from "@/lib/mock-data";
-import { formatUSD } from "@/lib/format";
+import { formatINR } from "@/lib/format";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({ meta: [{ title: "Admin Dashboard — FerroCore" }] }),

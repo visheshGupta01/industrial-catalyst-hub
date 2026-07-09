@@ -2,34 +2,13 @@
 // Base URL comes from VITE_API_URL (defaults to http://localhost:3000).
 // Bearer token is read from localStorage on every request.
 
+import { tokenStore } from "../store/auth";
+
 export const API_BASE: string =
   (typeof import.meta !== "undefined" &&
     (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL) ||
   "http://127.0.0.1:3000/api";
 
-  console.log(API_BASE)
-
-const TOKEN_KEY = "ferrocore_token";
-
-export const tokenStore = {
-  get(): string | null {
-    if (typeof window === "undefined") return null;
-    try {
-      return localStorage.getItem(TOKEN_KEY);
-    } catch {
-      return null;
-    }
-  },
-  set(token: string | null) {
-    if (typeof window === "undefined") return;
-    try {
-      if (token) localStorage.setItem(TOKEN_KEY, token);
-      else localStorage.removeItem(TOKEN_KEY);
-    } catch {
-      /* ignore */
-    }
-  },
-};
 
 export class ApiError extends Error {
   status: number;
@@ -55,25 +34,36 @@ export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Prom
     throw new ApiError(0, "API not available during SSR");
   }
   const url = `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
-  const headers: Record<string, string> = { Accept: "application/json" };
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  };
   const token = tokenStore.get();
   if (token) headers.Authorization = `Bearer ${token}`;
-  if (opts.body !== undefined) headers["Content-Type"] = "application/json";
+  
+  const isFormData = opts.body instanceof FormData;
+
+  if (opts.body !== undefined && !isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
 
   let res: Response;
   try {
     res = await fetch(url, {
       method: opts.method ?? "GET",
       headers,
-      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+      body:
+        opts.body === undefined ? undefined : isFormData ? opts.body : JSON.stringify(opts.body),
       signal: opts.signal,
     });
   } catch (e) {
     throw new ApiError(0, `Network error: ${(e as Error).message}`);
   }
 
-  let data: unknown = null;
+let data: unknown = null;
+
+if (res.status !== 204) {
   const text = await res.text();
+
   if (text) {
     try {
       data = JSON.parse(text);
@@ -81,6 +71,7 @@ export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Prom
       data = text;
     }
   }
+}
 
   if (!res.ok) {
     let msg = `Request failed (${res.status})`;
@@ -96,7 +87,8 @@ export async function apiFetch<T>(path: string, opts: RequestOptions = {}): Prom
 export async function apiTry<T>(path: string, opts: RequestOptions = {}): Promise<T | null> {
   try {
     return await apiFetch<T>(path, opts);
-  } catch {
+  } catch (error) {
+    console.error(error);
     return null;
   }
 }

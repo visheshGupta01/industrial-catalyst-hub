@@ -1,10 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
-import { Search, SlidersHorizontal, X, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { ProductCard } from "@/components/site/ProductCard";
 import { useProducts } from "@/hooks/useProducts";
 import { ProductGridSkeleton } from "@/components/skeletons/ProductGridSkeleton";
+import { EmptyState } from "@/components/states/EmptyState";
+import { ErrorState } from "@/components/states/ErrorState";
+import { Spinner } from "@/components/ui/spinner";
+import { useCategories } from "@/hooks/useCategory";
+import { ProductFilters } from "@/types/product";
+import { useProductFilters } from "@/hooks/useProductFilters";
 
 export const Route = createFileRoute("/products/")({
   head: () => ({
@@ -17,62 +23,77 @@ export const Route = createFileRoute("/products/")({
       },
     ],
   }),
+  validateSearch: (search) => ({
+    q: search.q ?? "",
+    category: search.category,
+    page: Number(search.page ?? 1),
+    sort: search.sort ?? "newest",
+    minPrice: search.minPrice ? Number(search.minPrice) : undefined,
+    maxPrice: search.maxPrice ? Number(search.maxPrice) : undefined,
+    inStock: search.inStock === "true",
+  }),
   component: ProductsPage,
 });
 
 function ProductsPage() {
-  const { category, q } = Route.useSearch({
-    select: (s: { category?: string; q?: string }) => s,
-  }) as { category?: string; q?: string };
-  const [search, setSearch] = useState(q ?? "");
-  const [cat, setCat] = useState(category ?? "All");
-  const [sort, setSort] = useState<"featured" | "price-asc" | "price-desc" | "name">("featured");
   const [mobileFilters, setMobileFilters] = useState(false);
-  const { data: products = [], isLoading, isError, error, isFetching } = useProducts();
+  const { data: filterData } = useProductFilters();
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
 
-  const categories = useMemo(
-    () => Array.from(new Set(products.map((p) => p.category))).sort(),
-    [products],
-  );
+  const filters: ProductFilters = {
+    keyword: search.q,
+    category: search.category,
+    page: search.page,
+    sort: search.sort,
+    minPrice: search.minPrice,
+    maxPrice: search.maxPrice,
+    inStock: search.inStock,
+    limit: 12,
+  };
+  // const debouncedKeyword = useDebounce(filters.keyword, 400);
+  const { data, isLoading, isFetching, isError, error } = useProducts(filters);
+  const products = data?.products ?? [];
 
-  const filtered = useMemo(() => {
-    let r = products;
-    if (cat !== "All") r = r.filter((p) => p.category === cat);
-    if (search) {
-      const s = search.toLowerCase();
-      r = r.filter(
-        (p) =>
-          p.name.toLowerCase().includes(s) ||
-          p.code.toLowerCase().includes(s) ||
-          p.category.toLowerCase().includes(s),
-      );
-    }
-    const arr = [...r];
-    if (sort === "price-asc") arr.sort((a, b) => a.price - b.price);
-    if (sort === "price-desc") arr.sort((a, b) => b.price - a.price);
-    if (sort === "name") arr.sort((a, b) => a.name.localeCompare(b.name));
-    return arr;
-  }, [products, cat, search, sort]);
+  const pagination = data?.pagination;
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+
+  const updateFilters = (updates: Partial<ProductFilters>) => {
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        ...updates,
+      }),
+      replace: true,
+    });
+  };
 
   const filterPanel = (
     <>
       <div>
         <h4 className="text-xs font-semibold uppercase tracking-wider">Category</h4>
+
         <ul className="mt-3 space-y-1.5 text-sm">
-          {["All", ...categories].map((c) => (
-            <li key={c}>
+          <li>
+            <button
+              onClick={() => updateFilters({ category: undefined, page: 1 })}
+              className={`w-full text-left ${
+                !filters.category ? "font-semibold text-primary" : ""
+              }`}
+            >
+              All
+            </button>
+          </li>
+
+          {filterData?.global.categories.map((category) => (
+            <li key={category._id}>
               <button
-                onClick={() => setCat(c)}
-                className={`flex w-full items-center justify-between border-l-2 px-3 py-1.5 text-left transition-colors ${
-                  cat === c
-                    ? "border-accent bg-surface font-semibold text-primary"
-                    : "border-transparent hover:border-border hover:bg-surface"
+                onClick={() => updateFilters({ category: category._id, page: 1 })}
+                className={`w-full text-left ${
+                  filters.category === category._id ? "font-semibold text-primary" : ""
                 }`}
               >
-                <span>{c}</span>
-                <span className="text-xs text-muted-foreground">
-                  {c === "All" ? products.length : products.filter((p) => p.category === c).length}
-                </span>
+                {category.name}
               </button>
             </li>
           ))}
@@ -80,94 +101,102 @@ function ProductsPage() {
       </div>
       <div className="mt-6 border-t border-border pt-5">
         <h4 className="text-xs font-semibold uppercase tracking-wider">Availability</h4>
+
         <ul className="mt-3 space-y-2 text-sm">
-          {["In Stock", "Low Stock", "Out of Stock"].map((s) => (
-            <li key={s} className="flex items-center gap-2">
-              <input type="checkbox" defaultChecked className="accent-primary" />
-              <span>{s}</span>
+          {filterData?.global.availability.map((item) => (
+            <li key={item.label} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={filters.inStock ?? false}
+                onChange={(e) => updateFilters({ inStock: e.target.checked, page: 1 })}
+              />
+              <span>{item.label}</span>
             </li>
           ))}
         </ul>
       </div>
-      <div className="mt-6 border-t border-border pt-5">
-        <h4 className="text-xs font-semibold uppercase tracking-wider">Certification</h4>
-        <ul className="mt-3 space-y-2 text-sm">
-          {["CE", "ISO 9001", "ATEX", "REACH", "UL"].map((s) => (
-            <li key={s} className="flex items-center gap-2">
-              <input type="checkbox" className="accent-primary" />
-              <span>{s}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {Object.entries(filterData?.specifications ?? {}).map(([specName, values]) => (
+        <div key={specName} className="mt-6 border-t border-border pt-5">
+          <h4 className="text-xs font-semibold uppercase tracking-wider">{specName}</h4>
+
+          <ul className="mt-3 space-y-2 text-sm">
+            {values.map((value) => {
+              const selected = filters.specifications?.[specName]?.includes(value);
+
+              return (
+                <li key={value} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={(e) => {
+                      updateFilters({
+                        specifications: {
+                          ...filters.specifications,
+                          [specName]: e.target.checked
+                            ? [...(filters.specifications?.[specName] ?? []), value]
+                            : (filters.specifications?.[specName] ?? []).filter((v) => v !== value),
+                        },
+                        page: 1,
+                      });
+                    }}
+                  />
+
+                  <span>{value}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
       <div className="mt-6 border-t border-border pt-5">
         <h4 className="text-xs font-semibold uppercase tracking-wider">Price range (₹)</h4>
         <div className="mt-3 flex items-center gap-2 text-sm">
           <input
-            placeholder="Min"
-            className="w-full border border-input bg-background px-2 py-1.5 text-sm focus:border-primary focus:outline-none"
+            className="w-full border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            value={filters.minPrice ?? ""}
+            placeholder={String(filterData?.global.priceRange.min ?? 0)}
+            onChange={(e) =>
+              updateFilters({
+                minPrice: e.target.value ? Number(e.target.value) : undefined,
+                page: 1,
+              })
+            }
           />
           <span className="text-muted-foreground">—</span>
           <input
-            placeholder="Max"
-            className="w-full border border-input bg-background px-2 py-1.5 text-sm focus:border-primary focus:outline-none"
+            className="w-full border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            value={filters.maxPrice ?? ""}
+            placeholder={String(filterData?.global.priceRange.max ?? 0)}
+            onChange={(e) =>
+              updateFilters({
+                maxPrice: e.target.value ? Number(e.target.value) : undefined,
+                page: 1,
+              })
+            }
           />
         </div>
       </div>
       <div className="mt-6 border-t border-border pt-5 lg:hidden">
         <h4 className="text-xs font-semibold uppercase tracking-wider">Sort by</h4>
         <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value as typeof sort)}
+          value={filters.sort}
+          onChange={(e) =>
+            updateFilters({
+              sort: e.target.value,
+              page: 1,
+            })
+          }
           className="mt-3 w-full border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
         >
-          <option value="featured">Featured</option>
-          <option value="price-asc">Price: Low to High</option>
-          <option value="price-desc">Price: High to Low</option>
-          <option value="name">Name (A–Z)</option>
+          {filterData?.global.sortOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </select>
       </div>
     </>
   );
-
-  if (isLoading) {
-    return (
-      <SiteLayout>
-          <section className="border-b border-border bg-surface">
-            <div className="container-page py-12">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Link to="/" className="hover:text-primary">
-                  Home
-                </Link>
-                <span>/</span>
-                <span className="text-foreground">Product Catalog</span>
-              </div>
-              <h1 className="mt-3 text-3xl font-bold md:text-4xl">Industrial Product Catalog</h1>
-              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                {filtered.length} products across {categories.length} engineered categories — fully
-                certified, in stock, ready for global shipment.
-              </p>
-            </div>
-          </section>
-        <section className="container-page py-10">
-          <ProductGridSkeleton />
-        </section>
-      </SiteLayout>
-    );
-  }
-if (isError) {
-  return (
-    <SiteLayout>
-      <div className="container-page py-20 text-center">
-        <h2 className="text-xl font-semibold">Failed to load products</h2>
-        <p className="mt-2 text-muted-foreground">
-          {error instanceof Error ? error.message : "Something went wrong."}
-        </p>
-      </div>
-    </SiteLayout>
-  );
-}
-  
 
   return (
     <SiteLayout>
@@ -182,8 +211,8 @@ if (isError) {
           </div>
           <h1 className="mt-3 text-3xl font-bold md:text-4xl">Industrial Product Catalog</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            {filtered.length} products across {categories.length} engineered categories — fully
-            certified, in stock, ready for global shipment.
+            {pagination?.totalProducts ?? products.length} products across {categories.length}{" "}
+            engineered categories — fully certified, in stock, ready for global shipment.
           </p>
         </div>
       </section>
@@ -206,40 +235,95 @@ if (isError) {
             >
               <SlidersHorizontal className="h-4 w-4" /> Filter & Sort
             </button>
-
             <div className="flex flex-wrap items-center gap-3 border border-border bg-card p-3">
               <div className="relative flex-1 min-w-[200px]">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  value={filters.keyword ?? ""}
+                  onChange={(e) =>
+                    updateFilters({
+                      keyword: e.target.value,
+                      page: 1,
+                    })
+                  }
                   placeholder="Search by name, SKU, or specification…"
                   className="w-full border border-input bg-background py-2 pl-9 pr-3 text-sm focus:border-primary focus:outline-none"
                 />
               </div>
               <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value as typeof sort)}
+                value={filters.sort}
+                onChange={(e) =>
+                  updateFilters({
+                    sort: e.target.value,
+                    page: 1,
+                  })
+                }
                 className="hidden border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none lg:block"
               >
-                <option value="featured">Sort: Featured</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-                <option value="name">Name (A–Z)</option>
+                {filterData?.global.sortOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </div>
-            <div className="flex items-center gap-2">{isFetching && <Spinner size="sm" />}</div>
-             <main>
-        {isLoading ? (
-          <ProductGridSkeleton />
-        ) : isError ? (
-          <ErrorState />
-        ) : filtered.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <ProductGrid products={filtered} />
-        )}
-      </main>
+            <div className="mt-4 flex items-center justify-end gap-2 text-sm text-muted-foreground">
+              {isFetching && (
+                <>
+                  <Spinner size="sm" />
+                  <span>Refreshing products...</span>
+                </>
+              )}
+            </div>
+            <main className="mt-6">
+              {isLoading ? (
+                <ProductGridSkeleton />
+              ) : isError ? (
+                <ErrorState
+                  title="Failed to load products"
+                  description={
+                    error instanceof Error
+                      ? error.message
+                      : "Something went wrong while loading products."
+                  }
+                />
+              ) : products.length === 0 ? (
+                <EmptyState title="No products found" description="Try adjusting your filters." />
+              ) : (
+                <div className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                  {products.map((p) => (
+                    <ProductCard key={p._id} product={p} />
+                  ))}
+                </div>
+              )}
+            </main>
+          </div>
+          <div className="mt-8 flex items-center justify-between">
+            <button
+              disabled={!pagination?.hasPreviousPage}
+              onClick={() =>
+                updateFilters({
+                  page: filters.page - 1,
+                })
+              }
+            >
+              Previous
+            </button>
+
+            <span>
+              Page {pagination?.currentPage} of {pagination?.totalPages}
+            </span>
+
+            <button
+              disabled={!pagination?.hasNextPage}
+              onClick={() =>
+                updateFilters({
+                  page: filters.page + 1,
+                })
+              }
+            >
+              Next
+            </button>
           </div>
         </div>
       </section>
@@ -268,8 +352,18 @@ if (isError) {
             <footer className="sticky bottom-0 grid grid-cols-2 gap-3 border-t border-border bg-background p-4">
               <button
                 onClick={() => {
-                  setCat("All");
-                  setSearch("");
+                  updateFilters({
+                    keyword: "",
+                    category: undefined,
+                    sort: "newest",
+                    page: 1,
+                    brand: undefined,
+                    minPrice: undefined,
+                    maxPrice: undefined,
+                    inStock: false,
+                    specifications: {},
+                    limit: 12,
+                  });
                 }}
                 className="border border-border px-4 py-3 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:text-primary"
               >
@@ -279,7 +373,7 @@ if (isError) {
                 onClick={() => setMobileFilters(false)}
                 className="bg-primary px-4 py-3 text-xs font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90"
               >
-                Show {filtered.length} results
+                Show {pagination?.totalProducts ?? products.length} results
               </button>
             </footer>
           </div>

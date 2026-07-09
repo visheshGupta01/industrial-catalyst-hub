@@ -1,19 +1,53 @@
+import { Cart } from "@/types";
 import { apiFetch } from "./client";
-
-export type RemoteCartItem = { productId: string; quantity: number };
+import { CartResponse } from "@/types/cart";
 
 export const cartApi = {
-  get: () => apiFetch<{ items: RemoteCartItem[] }>("/cart").catch(() => ({ items: [] })),
-  add: (productId: string, quantity: number) =>
-    apiFetch("/cart/add", { method: "POST", body: { productId, quantity } }).catch(() => null),
-  update: (productId: string, quantity: number) =>
-    apiFetch(`/cart/items/${encodeURIComponent(productId)}`, {
-      method: "PATCH",
+  get: async (): Promise<Cart> => {
+    const res = await apiFetch<CartResponse>("/cart");
+    return res.cart;
+  },
+
+  add: async ({ productId, quantity }: { productId: string; quantity: number }): Promise<Cart> => {
+    const res = await apiFetch<CartResponse>("/cart/items", {
+      method: "POST",
+      body: {
+        productId,
+        quantity,
+      },
+    });
+
+    return res.cart;
+  },
+
+  update: async ({
+    productId,
+    quantity,
+  }: {
+    productId: string;
+    quantity: number;
+  }): Promise<Cart> => {
+    const res = await apiFetch<CartResponse>(`/cart/items/${productId}`, {
+      method: "PUT",
       body: { quantity },
-    }).catch(() => null),
-  remove: (productId: string) =>
-    apiFetch(`/cart/items/${encodeURIComponent(productId)}`, { method: "DELETE" }).catch(
-      () => null,
-    ),
-  clear: () => apiFetch("/cart", { method: "DELETE" }).catch(() => null),
+    });
+
+    return res.cart;
+  },
+
+  remove: async (productId: string): Promise<Cart> => {
+    const res = await apiFetch<CartResponse>(`/cart/items/${productId}`, {
+      method: "DELETE",
+    });
+
+    return res.cart;
+  },
+
+  clear: async (): Promise<Cart> => {
+    const res = await apiFetch<CartResponse>("/cart", {
+      method: "DELETE",
+    });
+
+    return res.cart;
+  },
 };

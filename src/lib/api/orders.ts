@@ -1,30 +1,37 @@
-import { apiFetch, apiTry } from "./client";
+import { apiFetch } from "./client";
+import type { Order, ShippingAddress } from "@/types/order";
 
-export type ApiOrder = {
-  id: string;
-  date: string;
-  status: "Pending" | "Processing" | "Shipped" | "Delivered" | string;
-  amount: number;
-  items?: Array<{ productId: string; quantity: number; price: number; name?: string }>;
-  shipping?: Record<string, unknown>;
-  payment?: Record<string, unknown>;
+interface OrderResponse {
+  success: boolean;
+  order: Order;
+}
+
+interface OrdersResponse {
+  success: boolean;
+  orders: Order[];
+}
+
+export const orderApi = {
+  async getMyOrders(): Promise<Order[]> {
+    const res = await apiFetch<OrdersResponse>("/orders/my");
+
+    return res.orders;
+  },
+
+  async getOrder(id: string): Promise<Order> {
+    const res = await apiFetch<OrderResponse>(`/orders/${encodeURIComponent(id)}`);
+
+    return res.order;
+  },
+
+  async placeOrder(shippingAddress: ShippingAddress): Promise<Order> {
+    const res = await apiFetch<OrderResponse>("/orders", {
+      method: "POST",
+      body: {
+        shippingAddress,
+      },
+    });
+
+    return res.order;
+  },
 };
-
-export async function listOrders(): Promise<ApiOrder[]> {
-  const res = await apiTry<ApiOrder[] | { orders: ApiOrder[] }>("/orders");
-  if (!res) return [];
-  return Array.isArray(res) ? res : res.orders ?? [];
-}
-
-export async function getOrder(id: string): Promise<ApiOrder | null> {
-  return apiTry<ApiOrder>(`/orders/${encodeURIComponent(id)}`);
-}
-
-export async function placeOrder(payload: {
-  items: Array<{ productId: string; quantity: number; price: number }>;
-  shipping: Record<string, unknown>;
-  payment: Record<string, unknown>;
-  total: number;
-}): Promise<ApiOrder> {
-  return apiFetch<ApiOrder>("/orders", { method: "POST", body: payload });
-}

@@ -7,6 +7,13 @@ export type OrderStatus = "Pending" | "Processing" | "Shipped" | "Delivered" | "
 
 export interface OrderItem {
   product: string | Product;
+
+  // product snapshot
+  name: string;
+  slug: string;
+  sku: string;
+  image?: string;
+
   quantity: number;
   price: number;
 }
@@ -32,9 +39,10 @@ export interface Order {
   totalAmount: number;
 
   paymentStatus: PaymentStatus;
+
   orderStatus: OrderStatus;
 
-  orderNumber?: string;
+  orderNumber: string;
 
   createdAt: string;
   updatedAt: string;

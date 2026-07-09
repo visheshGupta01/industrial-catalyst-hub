@@ -1,94 +1,96 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
-import { Download, ShoppingCart, FileText, Minus, Plus, ShieldCheck, Truck, Award, Phone, Zap, Settings, BadgeCheck, Loader2 } from "lucide-react";
+import { useState } from "react";
+import {
+  Download,
+  ShoppingCart,
+  FileText,
+  Minus,
+  Plus,
+  ShieldCheck,
+  Truck,
+  Award,
+  Phone,
+  Loader2,
+} from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { ProductImage } from "@/components/site/ProductImage";
 import { ProductCard } from "@/components/site/ProductCard";
-import { products, type Product } from "@/lib/mock-data";
-import { fetchProduct, fetchProducts } from "@/lib/api/products";
-import { formatUSD } from "@/lib/format";
-import { cartStore, useRecentlyViewed } from "@/lib/cart-store";
-import { useAuth } from "@/lib/auth-store";
+import { formatINR } from "@/lib/format";
+import { useProduct, useProducts } from "@/hooks/useProducts";
+import { useAddToCart } from "@/hooks/useCart";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/products/$id")({
   head: ({ params }) => ({
-    meta: [
-      { title: `Product ${params.id} — FerroCore` },
-    ],
+    meta: [{ title: `Product ${params.id} — FerroCore` }],
   }),
   component: ProductDetail,
 });
 
-const FEATURE_ICONS = [Zap, Settings, ShieldCheck, BadgeCheck];
-
 function ProductDetail() {
   const { id } = Route.useParams();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [catalog, setCatalog] = useState<Product[]>(products);
-  const [loading, setLoading] = useState(true);
+  const { data: product, isLoading, isError } = useProduct(id);
   const [tab, setTab] = useState<"description" | "specifications" | "features">("description");
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
   const [zoom, setZoom] = useState<{ x: number; y: number } | null>(null);
-  const recent = useRecentlyViewed();
   const user = useAuth();
   const navigate = useNavigate();
+  const addToCart = useAddToCart();
+  const { data: relatedResponse } = useProducts({
+    category: product?.category._id,
+    page: 1,
+    limit: 4,
+  });
 
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    Promise.all([fetchProduct(id), fetchProducts()]).then(([p, list]) => {
-      if (!active) return;
-      setProduct(p ?? null);
-      if (list.length) setCatalog(list);
-      setLoading(false);
-      if (p) cartStore.trackView(p.id);
-      setActiveImg(0);
-      setQty(1);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-    return () => { active = false; };
-  }, [id]);
-
-  if (loading || !product) {
+  if (isLoading) {
     return (
       <SiteLayout>
         <div className="container-page flex items-center justify-center gap-2 py-32 text-sm text-muted-foreground">
-          {loading ? (
-            <><Loader2 className="h-4 w-4 animate-spin" /> Loading product…</>
-          ) : (
-            <>
-              <span>Product not found.</span>
-              <Link to="/products" className="text-primary hover:underline">Back to catalog</Link>
-            </>
-          )}
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading product...
         </div>
       </SiteLayout>
     );
   }
 
-  const related = catalog.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
-  const recentProducts = recent
-    .filter((rid) => rid !== product.id)
-    .map((rid) => catalog.find((p) => p.id === rid))
-    .filter(Boolean)
-    .slice(0, 4) as Product[];
+  if (isError || !product) {
+    return (
+      <SiteLayout>
+        <div className="container-page py-32 text-center">Product not found.</div>
+      </SiteLayout>
+    );
+  }
 
-  const inStock = product.status !== "Out of Stock";
+  const related = relatedResponse?.products.filter((p) => p._id !== product?._id) ?? [];
 
+  const status =
+    product.stock === 0 ? "Out of Stock" : product.stock <= 5 ? "Low Stock" : "In Stock";
+
+  const inStock = product.stock > 0;
   return (
     <SiteLayout>
       {/* breadcrumb */}
       <div className="border-b border-border bg-surface">
         <div className="container-page py-4 text-xs text-muted-foreground">
-          <Link to="/" className="hover:text-primary">Home</Link>
+          <Link to="/" className="hover:text-primary">
+            Home
+          </Link>
           <span className="mx-2">/</span>
-          <Link to="/products" className="hover:text-primary">Catalog</Link>
+          <Link to="/products" className="hover:text-primary">
+            Catalog
+          </Link>
           <span className="mx-2">/</span>
-          <Link to="/products" search={{ category: product.category }} className="hover:text-primary">{product.category}</Link>
+          <Link
+            to="/products"
+            search={{ category: product.category._id }}
+            className="hover:text-primary"
+          >
+            {product.category.name}
+          </Link>
           <span className="mx-2">/</span>
-          <span className="text-foreground">{product.code}</span>
+          <span className="text-foreground">{product.sku}</span>
         </div>
       </div>
 
@@ -109,15 +111,29 @@ function ProductDetail() {
             >
               <div
                 className="transition-transform duration-200 ease-out"
-                style={zoom ? { transform: `scale(2)`, transformOrigin: `${zoom.x}% ${zoom.y}%` } : undefined}
+                style={
+                  zoom
+                    ? { transform: `scale(2)`, transformOrigin: `${zoom.x}% ${zoom.y}%` }
+                    : undefined
+                }
               >
-                <ProductImage image={product.image} className="aspect-square" />
+                <ProductImage image={product.images[activeImg]?.url} className="aspect-square" />
               </div>
               <span className="pointer-events-none absolute bottom-3 right-3 hidden bg-background/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground md:block">
                 Hover to zoom
               </span>
             </div>
             <div className="mt-3 grid grid-cols-4 gap-3">
+              {product.images.map((image, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveImg(i)}
+                  className={`border bg-card transition-colors ${activeImg === i ? "border-primary" : "border-border hover:border-primary"}`}
+                  aria-label={`View image ${i + 1}`}
+                >
+                  <ProductImage image={image.url} className="aspect-square scale-90" />
+                </button>
+              ))}
               {[0, 1, 2, 3].map((i) => (
                 <button
                   key={i}
@@ -125,7 +141,10 @@ function ProductDetail() {
                   className={`border bg-card transition-colors ${activeImg === i ? "border-primary" : "border-border hover:border-primary"}`}
                   aria-label={`View image ${i + 1}`}
                 >
-                  <ProductImage image={product.image} className="aspect-square scale-90" />
+                  <ProductImage
+                    image={product.images[activeImg]?.url}
+                    className="aspect-square scale-90"
+                  />
                 </button>
               ))}
             </div>
@@ -134,46 +153,82 @@ function ProductDetail() {
           {/* Detail panel */}
           <div>
             <div className="flex flex-wrap items-center gap-3 text-[11px] uppercase tracking-wider">
-              <span className="bg-primary/10 px-2 py-1 font-semibold text-primary">{product.category}</span>
-              <span className="font-mono text-muted-foreground">SKU · {product.code}</span>
+              <span className="bg-primary/10 px-2 py-1 font-semibold text-primary">
+                {product.category.name}
+              </span>
+              <span className="font-mono text-muted-foreground">SKU · {product.sku}</span>
             </div>
             <h1 className="mt-4 text-3xl font-bold leading-tight md:text-4xl">{product.name}</h1>
-            <p className="mt-3 text-base text-muted-foreground">{product.shortDescription}</p>
+            <p className="mt-3 text-base text-muted-foreground">{product.description}</p>
 
             <div className="mt-6 flex flex-wrap items-center gap-4 border-y border-border py-5">
               <div>
-                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Unit Price</div>
-                <div className="text-3xl font-bold">{formatUSD(product.price)}</div>
+                <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  Unit Price
+                </div>
+                {product.discountPrice ? (
+                  <>
+                    <div className="text-3xl font-bold">{formatINR(product.discountPrice)}</div>
+
+                    <div className="line-through text-muted-foreground">
+                      {formatINR(product.price)}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-3xl font-bold">{formatINR(product.price)}</div>
+                )}{" "}
                 <div className="text-xs text-muted-foreground">excl. tax & freight</div>
               </div>
               <div className="ml-auto text-right">
-                <div className={`text-sm font-semibold ${
-                  product.status === "In Stock" ? "text-emerald-700" :
-                  product.status === "Low Stock" ? "text-accent" : "text-destructive"
-                }`}>{product.status}</div>
+                <div
+                  className={`text-sm font-semibold ${
+                    status === "In Stock"
+                      ? "text-emerald-700"
+                      : status === "Low Stock"
+                        ? "text-accent"
+                        : "text-destructive"
+                  }`}
+                >
+                  {status}
+                </div>
                 <div className="text-xs text-muted-foreground">Lead time · 2–4 weeks</div>
               </div>
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex items-stretch border border-border">
-                <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="px-3 hover:bg-surface" aria-label="Decrease"><Minus className="h-3.5 w-3.5" /></button>
+                <button
+                  onClick={() => setQty((q) => Math.max(1, q - 1))}
+                  className="px-3 hover:bg-surface"
+                  aria-label="Decrease"
+                >
+                  <Minus className="h-3.5 w-3.5" />
+                </button>
                 <input
                   value={qty}
                   onChange={(e) => setQty(Math.max(1, Number(e.target.value) || 1))}
                   className="w-14 border-x border-border bg-background text-center text-sm font-semibold focus:outline-none"
                 />
-                <button onClick={() => setQty((q) => q + 1)} className="px-3 hover:bg-surface" aria-label="Increase"><Plus className="h-3.5 w-3.5" /></button>
+                <button
+                  onClick={() => setQty((q) => q + 1)}
+                  className="px-3 hover:bg-surface"
+                  aria-label="Increase"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
               </div>
               <button
-                disabled={!inStock}
+                disabled={!inStock || addToCart.isPending}
                 onClick={() => {
                   if (!user) {
                     toast.info("Sign in to add products to your cart");
                     navigate({ to: "/auth" });
                     return;
                   }
-                  cartStore.add(product, qty);
+                  addToCart.mutate({
+                    productId: product._id,
+                    quantity: qty,
+                  });
                 }}
                 className="inline-flex items-center gap-2 bg-primary px-6 py-3 text-sm font-semibold uppercase tracking-wider text-primary-foreground transition-colors hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
               >
@@ -238,12 +293,26 @@ function ProductDetail() {
                 </p>
               </div>
               <aside className="border border-border bg-surface p-5">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">At a glance</div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  At a glance
+                </div>
                 <ul className="mt-3 space-y-2 text-sm">
-                  <li className="flex justify-between border-b border-border py-2"><span className="text-muted-foreground">Origin</span><span className="font-semibold">Germany</span></li>
-                  <li className="flex justify-between border-b border-border py-2"><span className="text-muted-foreground">HS Code</span><span className="font-mono">8479.89</span></li>
-                  <li className="flex justify-between border-b border-border py-2"><span className="text-muted-foreground">MOQ</span><span className="font-semibold">1 unit</span></li>
-                  <li className="flex justify-between py-2"><span className="text-muted-foreground">Payment</span><span className="font-semibold">T/T, L/C, Net-30</span></li>
+                  <li className="flex justify-between border-b border-border py-2">
+                    <span className="text-muted-foreground">Origin</span>
+                    <span className="font-semibold">Germany</span>
+                  </li>
+                  <li className="flex justify-between border-b border-border py-2">
+                    <span className="text-muted-foreground">HS Code</span>
+                    <span className="font-mono">8479.89</span>
+                  </li>
+                  <li className="flex justify-between border-b border-border py-2">
+                    <span className="text-muted-foreground">MOQ</span>
+                    <span className="font-semibold">1 unit</span>
+                  </li>
+                  <li className="flex justify-between py-2">
+                    <span className="text-muted-foreground">Payment</span>
+                    <span className="font-semibold">T/T, L/C, Net-30</span>
+                  </li>
                 </ul>
               </aside>
             </div>
@@ -252,32 +321,17 @@ function ProductDetail() {
             <div className="overflow-x-auto border border-border">
               <table className="w-full text-sm">
                 <tbody>
-                  {product.specs.map((s, i) => (
-                    <tr key={s.label} className={i % 2 ? "bg-surface" : "bg-card"}>
-                      <th className="w-1/3 px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">{s.label}</th>
-                      <td className="px-5 py-3 font-medium">{s.value}</td>
+                  {Object.entries(product.specifications).map(([key, value]) => (
+                    <tr key={key}>
+                      <th className="w-1/3 px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {key}
+                      </th>
+                      <td className="px-5 py-3 font-medium">{value}</td>
                     </tr>
                   ))}
-                  <tr className="bg-surface"><th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Material</th><td className="px-5 py-3 font-medium">Cast iron / SS316 / Alloy steel</td></tr>
-                  <tr className="bg-card"><th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Certification</th><td className="px-5 py-3 font-medium">CE · ISO 9001:2015 · RoHS</td></tr>
                 </tbody>
               </table>
             </div>
-          )}
-          {tab === "features" && (
-            <ul className="grid gap-4 md:grid-cols-2">
-              {product.features.map((f, i) => {
-                const Icon = FEATURE_ICONS[i % FEATURE_ICONS.length];
-                return (
-                  <li key={f} className="flex items-start gap-4 border border-border bg-card p-5 text-sm transition-colors hover:border-primary">
-                    <div className="grid h-10 w-10 shrink-0 place-items-center bg-primary/10 text-primary">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <span className="font-medium">{f}</span>
-                  </li>
-                );
-              })}
-            </ul>
           )}
         </div>
 
@@ -285,19 +339,18 @@ function ProductDetail() {
           <div className="mt-16">
             <div className="flex items-baseline justify-between">
               <h2 className="text-2xl font-bold">Related products</h2>
-              <Link to="/products" search={{ category: product.category }} className="text-sm font-semibold text-primary hover:underline">View all →</Link>
+              <Link
+                to="/products"
+                search={{ category: product.category._id }}
+                className="text-sm font-semibold text-primary hover:underline"
+              >
+                View all →
+              </Link>
             </div>
             <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {related.map((p) => <ProductCard key={p.id} product={p} />)}
-            </div>
-          </div>
-        )}
-
-        {recentProducts.length > 0 && (
-          <div className="mt-16">
-            <h2 className="text-2xl font-bold">Recently viewed</h2>
-            <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {recentProducts.map((p) => <ProductCard key={p.id} product={p} />)}
+              {related.map((p) => (
+                <ProductCard key={p._id} product={p} />
+              ))}
             </div>
           </div>
         )}

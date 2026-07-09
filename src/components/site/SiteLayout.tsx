@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { CartDrawer } from "./CartDrawer";
-import { useAuth } from "@/lib/auth-store";
+import { useAuth } from "@/hooks/useAuth";
 
 export function SiteLayout({ children }: { children: ReactNode }) {
   const user = useAuth();

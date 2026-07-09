@@ -1,18 +1,35 @@
 import { fetchProducts, fetchProduct } from "@/lib/api/products";
-import { Product } from "@/types";
-import { useQuery } from "@tanstack/react-query";
+import { productKeys } from "@/lib/queryKeys";
+import { ProductFilters } from "@/types/product";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
-export function useProducts() {
-  return useQuery<Product[]>({
-    queryKey: ["products"],
-    queryFn: fetchProducts,
+export function useProducts(filters: ProductFilters) {
+  return useQuery({
+    queryKey: productKeys.list(filters),
+
+    queryFn: () => fetchProducts(filters),
+
+    placeholderData: keepPreviousData,
   });
 }
 
 export function useProduct(id: string) {
   return useQuery({
-    queryKey: ["product", id],
+    queryKey: productKeys.detail(id),
     queryFn: () => fetchProduct(id),
     enabled: !!id,
+  });
+}
+
+export function useFeaturedProducts() {
+  return useQuery({
+    queryKey: productKeys.featured(),
+    queryFn: () =>
+      fetchProducts({
+        sort: "newest",
+        page: 1,
+        limit: 12,
+        featured: true,
+      }),
   });
 }

@@ -19,8 +19,8 @@ export interface Product {
   stock: number;
   sku?: string;
 
-  category: string | Category;
-  subCategory?: string | SubCategory;
+  category: Category;
+  subCategory?: SubCategory;
 
   brand?: string;
 
@@ -38,4 +38,65 @@ export interface Product {
 
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProductFilters {
+  keyword?: string;
+
+  category?: string;
+
+  brand?: string[];
+
+  minPrice?: number;
+  maxPrice?: number;
+
+  inStock?: boolean;
+  featured?: boolean;
+  active?: boolean;
+
+  specifications?: Record<string, string[]>;
+
+  sort?: string;
+
+  page: number;
+  limit: number;
+}
+
+export interface ProductResponse {
+  success: boolean;
+
+  products: Product[];
+
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalProducts: number;
+    limit: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
+export interface ProductFiltersResponse {
+  global: {
+    categories: Category[];
+    brands: string[];
+
+    priceRange: {
+      min: number;
+      max: number;
+    };
+
+    availability: {
+      label: string;
+      value: boolean;
+    }[];
+
+    sortOptions: {
+      label: string;
+      value: string;
+    }[];
+  };
+
+  specifications: Record<string, string[]>;
 }
