@@ -9,12 +9,16 @@ import {
   Settings,
   Bell,
   Search,
+  FolderTree,
+  Layers,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
 const NAV = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/products", label: "Products", icon: Package },
+  { to: "/admin/categories", label: "Categories", icon: FolderTree },
+  { to: "/admin/subcategories", label: "Sub-categories", icon: Layers },
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { to: "/admin/users", label: "Users", icon: Users },
   // { to: "/admin/coupons", label: "Coupons", icon: Ticket },
