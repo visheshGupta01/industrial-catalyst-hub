@@ -48,7 +48,6 @@ export async function fetchProducts(filters?: ProductFilters): Promise<ProductRe
   const query = params.toString();
 
   const res = await apiTry<ProductResponse>(`/product${query ? `?${query}` : ""}`);
-  console.log(res);
 
   if (!res)
     return {

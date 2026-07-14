@@ -8,8 +8,9 @@ import { useState } from "react";
 import { useProductFilters } from "@/hooks/useProductFilters";
 import { useDeleteProduct } from "@/hooks/useAdminProducts";
 import { useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/admin/products")({
+export const Route = createFileRoute("/admin/products/")({
   head: () => ({ meta: [{ title: "Products — Admin" }] }),
   component: ProductsAdmin,
 });
@@ -20,6 +21,7 @@ function ProductsAdmin() {
     page: 1,
     limit: 10,
     sort: "newest",
+    category: "",
   });
   const { data = [] } = useProducts(filters);
   const { data: productFilters } = useProductFilters();
@@ -37,16 +39,12 @@ function ProductsAdmin() {
           <button className="inline-flex items-center gap-1.5 border border-border bg-card px-3 py-2 text-xs font-semibold uppercase tracking-wider hover:border-primary">
             <Download className="h-3.5 w-3.5" /> Export
           </button>
-          <button
+          <Link
             className="inline-flex items-center gap-1.5 bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90"
-            onClick={() => {
-              navigate({
-                to: "/admin/products/create",
-              });
-            }}
+            to="/admin/products/create"
           >
             <Plus className="h-3.5 w-3.5" /> Add Product
-          </button>
+          </Link>
         </div>
       }
     >
@@ -149,6 +147,9 @@ function ProductsAdmin() {
                       <button
                         className="border border-border p-1.5 hover:border-primary hover:text-primary"
                         aria-label="Edit"
+                        onClick={() =>
+                          navigate({ to: "/admin/products/$id/edit", params: { id: product._id } })
+                        }
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>

@@ -23,3 +23,14 @@ export const productKeys = {
 
   filters: () => [...productKeys.all, "filters"] as const,
 };
+
+export const adminKeys = {
+  all: ["admin"] as const,
+
+  dashboard: () => [...adminKeys.all, "dashboard"] as const,
+};
+
+export const adminUserKeys = {
+  all: ["admin-users"] as const,
+  detail: (id: string) => [...adminUserKeys.all, id] as const,
+};
