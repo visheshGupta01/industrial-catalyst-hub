@@ -7,7 +7,6 @@ export function useAuth() {
   return useQuery({
     queryKey: authKeys.me(),
     queryFn: authApi.me,
-    enabled: !!tokenStore.get(),
     staleTime: Infinity,
     retry: false,
   });
@@ -49,14 +48,16 @@ export function useLogout() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: authApi.logout,
-
-    onSuccess: async () => {
-      await queryClient.cancelQueries();
-
-      queryClient.clear();
-
+    mutationFn: async () => {
       tokenStore.clear();
+    },
+
+    onSuccess: () => {
+      queryClient.setQueryData(authKeys.me(), null);
+
+      queryClient.removeQueries({
+        queryKey: authKeys.me(),
+      });
     },
   });
 }

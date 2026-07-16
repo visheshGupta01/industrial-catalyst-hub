@@ -47,22 +47,22 @@ function AuthPage() {
         });
 
         toast.success("Welcome back!");
+        navigate({
+          to: "/",
+        });
       } else {
         await register.mutateAsync({
           name: String(fd.get("name") || ""),
           email,
           password,
-          company: String(fd.get("company") || ""),
-          phone: String(fd.get("phone") || ""),
         });
 
-        toast.success("Business account created");
+        toast.success("Account created");
+        navigate({
+          to: "/",
+        });
       }
       e.currentTarget.reset();
-
-      navigate({
-        to: "/profile",
-      });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Authentication failed");
     }
@@ -84,21 +84,22 @@ function AuthPage() {
             </div>
           </div>
           <div>
-            <div className="eyebrow text-accent">Enterprise procurement</div>
+            <div className="eyebrow text-accent">Welcome Back</div>
             <h2 className="mt-3 max-w-md text-4xl font-bold leading-tight">
-              One account for every
-              <br /> industrial program.
+              Shop smarter with
+              <br />
+              your FerroCore account.
             </h2>
             <p className="mt-5 max-w-md text-sm opacity-75">
-              Access tier pricing, framework agreements, Net-30 terms, compliance documentation, and
-              named technical engineers — all under a single business login.
+              Sign in to track your orders, save your favourite products, manage addresses, and
+              enjoy a faster checkout experience.
             </p>
             <ul className="mt-8 space-y-3 text-sm">
               {[
-                "ISO 9001:2015 certified supply chain",
-                "MTC, CoC & traceability before purchase",
-                "Volume-tier pricing and Net-30 terms",
-                "Dedicated procurement engineer",
+                "Fast & secure checkout",
+                "Track orders in real time",
+                "Save multiple delivery addresses",
+                "Exclusive member offers",
               ].map((t) => (
                 <li key={t} className="flex items-center gap-2 opacity-90">
                   <ShieldCheck className="h-4 w-4 text-accent" /> {t}
@@ -106,7 +107,7 @@ function AuthPage() {
               ))}
             </ul>
           </div>
-          <div className="text-xs opacity-50">© 2026 FerroCore Industrial Supply Co.</div>
+          <div className="text-xs opacity-50">© 2026 FerroCore</div>
         </aside>
 
         {/* Form panel */}
@@ -114,12 +115,12 @@ function AuthPage() {
           <div className="w-full max-w-md">
             <div className="eyebrow">{mode === "signin" ? "Sign in" : "Create account"}</div>
             <h1 className="mt-2 text-3xl font-bold">
-              {mode === "signin" ? "Access your business account" : "Open a business account"}
+              {mode === "signin" ? "Sign in to your account" : "Create your account"}{" "}
             </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               {mode === "signin"
-                ? "Enter your work email to continue."
-                : "Tell us about your company."}
+                ? "Sign in to continue shopping."
+                : "Create an account to enjoy faster checkout and order tracking."}
             </p>
 
             <div className="mt-6 inline-flex border border-border bg-card p-1 text-xs font-semibold uppercase tracking-wider">
@@ -142,29 +143,16 @@ function AuthPage() {
                     icon={User}
                     name="name"
                     label="Full name"
-                    placeholder="Priya Sharma"
+                    placeholder="John Doe"
                     required
-                  />
-                  <Field
-                    icon={Building2}
-                    name="company"
-                    label="Company"
-                    placeholder="Acme Manufacturing Ltd."
-                    required
-                  />
-                  <Field
-                    icon={Phone}
-                    name="phone"
-                    label="Work phone"
-                    placeholder="+91 98100 12345"
                   />
                 </>
               )}
               <Field
                 icon={Mail}
                 name="email"
-                label="Work email"
-                placeholder="procurement@acme.com"
+                label="Email Address"
+                placeholder="john@acme.com"
                 type="email"
                 required
               />
@@ -177,7 +165,7 @@ function AuthPage() {
                 required
               />
 
-              {mode === "signin" && (
+              {/* {mode === "signin" && (
                 <div className="flex items-center justify-between text-xs">
                   <label className="inline-flex items-center gap-2 text-muted-foreground">
                     <input type="checkbox" className="accent-primary" /> Remember this device
@@ -186,7 +174,7 @@ function AuthPage() {
                     Forgot password?
                   </button>
                 </div>
-              )}
+              )} */}
 
               <button
                 type="submit"
@@ -202,10 +190,10 @@ function AuthPage() {
                     : "Create account"}
               </button>
 
-              <div className="relative my-2 text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              {/* <div className="relative my-2 text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
                 <span className="bg-background px-2">or continue with</span>
                 <span className="absolute inset-x-0 top-1/2 -z-0 h-px bg-border" />
-              </div>
+              </div> */}
 
               {/* <div className="grid grid-cols-2 gap-3">
                 {["SSO / SAML", "Microsoft 365"].map((p) => (

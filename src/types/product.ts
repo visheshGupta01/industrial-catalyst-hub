@@ -6,6 +6,15 @@ export interface ProductImage {
   public_id: string;
 }
 
+export interface ProductShipping {
+  weight: number;
+  length: number;
+  breadth: number;
+  height: number;
+  hsnCode?: string;
+  isShippable: boolean;
+}
+
 export interface Product {
   _id: string;
 
@@ -17,12 +26,15 @@ export interface Product {
   discountPrice: number | null;
 
   stock: number;
+
   sku?: string;
 
-  category: Category;
-  subCategory?: SubCategory;
+  category: string;
+  subCategory?: string;
 
   brand?: string;
+
+  shipping: ProductShipping;
 
   images: ProductImage[];
 

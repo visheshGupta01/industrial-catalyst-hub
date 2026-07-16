@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import type { Order, ShippingAddress } from "@/types/order";
+import type { Order } from "@/types/order";
 
 interface OrderResponse {
   success: boolean;
@@ -13,24 +13,13 @@ interface OrdersResponse {
 
 export const orderApi = {
   async getMyOrders(): Promise<Order[]> {
-    const res = await apiFetch<OrdersResponse>("/orders/my");
+    const res = await apiFetch<OrdersResponse>("/orders");
 
     return res.orders;
   },
 
   async getOrder(id: string): Promise<Order> {
     const res = await apiFetch<OrderResponse>(`/orders/${encodeURIComponent(id)}`);
-
-    return res.order;
-  },
-
-  async placeOrder(shippingAddress: ShippingAddress): Promise<Order> {
-    const res = await apiFetch<OrderResponse>("/orders", {
-      method: "POST",
-      body: {
-        shippingAddress,
-      },
-    });
 
     return res.order;
   },

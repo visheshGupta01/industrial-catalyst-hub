@@ -14,12 +14,13 @@ import {
   ChevronDown,
   LayoutGrid,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useCart, useCartSummary } from "@/hooks/useCart";
+import { useEffect, useRef, useState } from "react";
+import { useCartSummary } from "@/hooks/useCart";
 import { toast } from "sonner";
 import { useCartDrawer } from "@/lib/store/cartDrawer";
 import { useCategories } from "@/hooks/useCategory";
 import { useAuth, useLogout } from "@/hooks/useAuth";
+import { SearchBox } from "../ui/searchBox";
 
 const NAV = [
   { to: "/", label: "Home" },
@@ -50,20 +51,56 @@ export function Navbar() {
         .toUpperCase()
     : "";
 
-  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== "Enter") return;
+  const menuRef = useRef<HTMLDivElement>(null);
 
+  const router = useRouterState();
+
+  const currentSearch =
+    router.location.pathname === "/products"
+      ? (router.location.search as Record<string, unknown>)
+      : {};
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) {
+        setMenu(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClick);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (router.location.pathname === "/products") {
+      setSearch(String(router.location.search.q ?? ""));
+    } else {
+      setSearch("");
+    }
+  }, [router.location.pathname, router.location.search]);
+
+  useEffect(() => {
+    setMenu(false);
+    setOpen(false);
+    setCatOpen(false);
+    setSearchOpen(false);
+  }, [pathname]);
+
+  const searchProducts = () => {
     navigate({
       to: "/products",
-      search: {
+      search: (prev) => ({
+        ...prev,
         q: keyword || undefined,
         page: 1,
-      },
+      }),
     });
 
     setSearchOpen(false);
   };
-
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="hidden border-b border-border/60 bg-secondary text-secondary-foreground md:block">
@@ -177,18 +214,13 @@ export function Navbar() {
         </nav>
 
         <div className="hidden flex-1 lg:block">
-          <div className="relative ml-auto max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              placeholder="Search for products…"
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={handleSearch}
-              className="w-full border border-input bg-surface py-2 pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary focus:shadow-sm"
-            />
-            <button onClick={handleSearch}>
-              <Search className="h-4 w-4" />
-            </button>
-          </div>
+          <SearchBox
+            value={search}
+            onChange={setSearch}
+            onSearch={searchProducts}
+            placeholder="Search for products..."
+            className="ml-auto max-w-md w-full"
+          />
         </div>
 
         <div className="ml-auto flex items-center gap-1 lg:ml-0 lg:gap-2">
@@ -215,7 +247,7 @@ export function Navbar() {
           </button>
 
           {user ? (
-            <div className="relative">
+            <div ref={menuRef} className="relative">
               <button
                 onClick={() => setMenu((v) => !v)}
                 className="hidden items-center gap-2 border border-border px-2 py-1.5 hover:border-primary md:inline-flex"
@@ -292,26 +324,7 @@ export function Navbar() {
 
       {searchOpen && (
         <div className="border-t border-border bg-background p-3 lg:hidden animate-fade-in">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              autoFocus
-              placeholder="Search for products..."
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={handleSearch}
-              className="w-full border border-input bg-surface py-2.5 pl-9 pr-9 text-sm focus:border-primary focus:outline-none"
-            />
-            <button onClick={handleSearch}>
-              <Search className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setSearchOpen(false)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1"
-              aria-label="Close search"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+          <SearchBox autoFocus value={search} onChange={setSearch} onSearch={searchProducts} />
         </div>
       )}
 
@@ -371,7 +384,7 @@ export function Navbar() {
                 ))}
               </div>
               {user ? (
-                <div className="mt-6">
+                <div ref={menuRef} className="mt-6">
                   <div className="eyebrow mb-2">My account</div>
                   {[
                     { label: "Profile details", icon: UserIcon },
@@ -397,9 +410,14 @@ export function Navbar() {
                   </Link>
                   <button
                     onClick={() => {
-                      authStore.logout();
-                      setOpen(false);
-                      toast.success("Signed out");
+                      console.log("LOgout");
+                      logout.mutate(undefined, {
+                        onSuccess: () => {
+                          navigate({ to: "/" });
+                          setMenu(false);
+                          toast.success("Signed out");
+                        },
+                      });
                     }}
                     className="mt-4 flex w-full items-center gap-3 py-3 text-left text-sm font-medium text-destructive"
                   >

@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ProductsRouteImport } from './routes/products'
+import { Route as OrderVerificationRouteImport } from './routes/order-verification'
 import { Route as OrderTrackingRouteImport } from './routes/order-tracking'
+import { Route as OrderFailedRouteImport } from './routes/order-failed'
 import { Route as OrderConfirmationRouteImport } from './routes/order-confirmation'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CartRouteImport } from './routes/cart'
@@ -46,9 +48,19 @@ const ProductsRoute = ProductsRouteImport.update({
   path: '/products',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrderVerificationRoute = OrderVerificationRouteImport.update({
+  id: '/order-verification',
+  path: '/order-verification',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrderTrackingRoute = OrderTrackingRouteImport.update({
   id: '/order-tracking',
   path: '/order-tracking',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrderFailedRoute = OrderFailedRouteImport.update({
+  id: '/order-failed',
+  path: '/order-failed',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrderConfirmationRoute = OrderConfirmationRouteImport.update({
@@ -176,7 +188,9 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/order-confirmation': typeof OrderConfirmationRoute
+  '/order-failed': typeof OrderFailedRoute
   '/order-tracking': typeof OrderTrackingRoute
+  '/order-verification': typeof OrderVerificationRoute
   '/products': typeof ProductsRouteWithChildren
   '/profile': typeof ProfileRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
@@ -203,7 +217,9 @@ export interface FileRoutesByTo {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/order-confirmation': typeof OrderConfirmationRoute
+  '/order-failed': typeof OrderFailedRoute
   '/order-tracking': typeof OrderTrackingRoute
+  '/order-verification': typeof OrderVerificationRoute
   '/profile': typeof ProfileRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/coupons': typeof AdminCouponsRoute
@@ -231,7 +247,9 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/checkout': typeof CheckoutRoute
   '/order-confirmation': typeof OrderConfirmationRoute
+  '/order-failed': typeof OrderFailedRoute
   '/order-tracking': typeof OrderTrackingRoute
+  '/order-verification': typeof OrderVerificationRoute
   '/products': typeof ProductsRouteWithChildren
   '/profile': typeof ProfileRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
@@ -261,7 +279,9 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/order-confirmation'
+    | '/order-failed'
     | '/order-tracking'
+    | '/order-verification'
     | '/products'
     | '/profile'
     | '/admin/analytics'
@@ -288,7 +308,9 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/order-confirmation'
+    | '/order-failed'
     | '/order-tracking'
+    | '/order-verification'
     | '/profile'
     | '/admin/analytics'
     | '/admin/coupons'
@@ -315,7 +337,9 @@ export interface FileRouteTypes {
     | '/cart'
     | '/checkout'
     | '/order-confirmation'
+    | '/order-failed'
     | '/order-tracking'
+    | '/order-verification'
     | '/products'
     | '/profile'
     | '/admin/analytics'
@@ -344,7 +368,9 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   CheckoutRoute: typeof CheckoutRoute
   OrderConfirmationRoute: typeof OrderConfirmationRoute
+  OrderFailedRoute: typeof OrderFailedRoute
   OrderTrackingRoute: typeof OrderTrackingRoute
+  OrderVerificationRoute: typeof OrderVerificationRoute
   ProductsRoute: typeof ProductsRouteWithChildren
   ProfileRoute: typeof ProfileRoute
 }
@@ -365,11 +391,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/order-verification': {
+      id: '/order-verification'
+      path: '/order-verification'
+      fullPath: '/order-verification'
+      preLoaderRoute: typeof OrderVerificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/order-tracking': {
       id: '/order-tracking'
       path: '/order-tracking'
       fullPath: '/order-tracking'
       preLoaderRoute: typeof OrderTrackingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/order-failed': {
+      id: '/order-failed'
+      path: '/order-failed'
+      fullPath: '/order-failed'
+      preLoaderRoute: typeof OrderFailedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/order-confirmation': {
@@ -595,10 +635,22 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   CheckoutRoute: CheckoutRoute,
   OrderConfirmationRoute: OrderConfirmationRoute,
+  OrderFailedRoute: OrderFailedRoute,
   OrderTrackingRoute: OrderTrackingRoute,
+  OrderVerificationRoute: OrderVerificationRoute,
   ProductsRoute: ProductsRouteWithChildren,
   ProfileRoute: ProfileRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

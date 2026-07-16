@@ -80,7 +80,6 @@ export function CheckoutStepper({ steps, current }: { steps: StepperStep[]; curr
 export const CHECKOUT_STEPS: StepperStep[] = [
   { id: "cart", label: "Cart" },
   { id: "info", label: "Information" },
-  { id: "shipping", label: "Shipping" },
   { id: "payment", label: "Payment" },
   { id: "review", label: "Review" },
   { id: "confirmation", label: "Confirmation" },

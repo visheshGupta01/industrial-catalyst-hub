@@ -1,17 +1,23 @@
-import type { Product } from "./product";
-import type { User } from "./user";
+export type PaymentProvider = "razorpay" | "cod";
 
-export type PaymentStatus = "Pending" | "Paid" | "Failed";
+export type PaymentStatus = "Pending" | "Verifying" | "Paid" | "Failed" | "Refunded";
+
+export type ShippingStatus =
+  | "Pending"
+  | "Shipment Created"
+  | "Pickup Scheduled"
+  | "Shipped"
+  | "Delivered"
+  | "Cancelled";
 
 export type OrderStatus = "Pending" | "Processing" | "Shipped" | "Delivered" | "Cancelled";
 
 export interface OrderItem {
-  product: string | Product;
+  product: string;
 
-  // product snapshot
   name: string;
-  slug: string;
-  sku: string;
+  slug?: string;
+  sku?: string;
   image?: string;
 
   quantity: number;
@@ -27,22 +33,68 @@ export interface ShippingAddress {
   pincode: string;
 }
 
+export interface Pricing {
+  subtotal: number;
+  shippingCost: number;
+  tax: number;
+  discount: number;
+  total: number;
+}
+
+export interface Payment {
+  provider: PaymentProvider;
+  status: PaymentStatus;
+
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
+
+  paidAt?: string;
+  failureReason?: string;
+}
+
+export interface PackageDimensions {
+  weight?: number;
+  length?: number;
+  breadth?: number;
+  height?: number;
+}
+
+export interface Shipping {
+  status: ShippingStatus;
+
+  provider?: string;
+  courier?: string;
+  courierId?: number;
+
+  shipmentId?: string;
+  shiprocketOrderId?: string;
+
+  awbCode?: string;
+  trackingUrl?: string;
+  estimatedDelivery?: string;
+
+  package?: PackageDimensions;
+}
+
 export interface Order {
   _id: string;
 
-  user: string | User;
+  user: string;
+
+  orderNumber: string;
 
   items: OrderItem[];
 
   shippingAddress: ShippingAddress;
 
-  totalAmount: number;
+  pricing: Pricing;
 
-  paymentStatus: PaymentStatus;
+  payment: Payment;
+
+  shipping: Shipping;
 
   orderStatus: OrderStatus;
-
-  orderNumber: string;
 
   createdAt: string;
   updatedAt: string;

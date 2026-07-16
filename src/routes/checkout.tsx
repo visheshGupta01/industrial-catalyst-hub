@@ -2,13 +2,13 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { CreditCard, Truck, Building2, CheckCircle2, ArrowRight, ArrowLeft } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { CheckoutStepper, CHECKOUT_STEPS } from "@/components/site/CheckoutStepper";
-import { formatINR, formatUSD } from "@/lib/format";
+import { formatINR } from "@/lib/format";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart, useCartSummary } from "@/hooks/useCart";
-import { usePlaceOrder } from "@/hooks/useOrders";
-
+import { useCreatePaymentOrder, useVerifyPayment } from "@/hooks/usePayment";
+import { loadRazorpay } from "@/lib/loadRazorpay";
 export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [{ title: "Checkout — FerroCore" }] }),
   component: Checkout,
@@ -16,8 +16,8 @@ export const Route = createFileRoute("/checkout")({
 
 // Map stepper index: 0 Cart, 1 Information, 2 Shipping, 3 Payment, 4 Review, 5 Confirmation
 function Checkout() {
-  const user = useAuth();
-  const placeOrderMutation = usePlaceOrder();
+  const createOrder = useCreatePaymentOrder();
+  const verifyPayment = useVerifyPayment();
   const { data: cart } = useCart();
 
   const items = cart?.items ?? [];
@@ -25,22 +25,37 @@ function Checkout() {
   const totals = useCartSummary();
   const navigate = useNavigate();
   const [step, setStep] = useState(1); // start at Information
-  const [shipping, setShipping] = useState("standard");
-  const [payment, setPayment] = useState("card");
+  const [payment, setPayment] = useState("razorpay");
   const [shippingAddress, setShippingAddress] = useState({
     fullName: "",
     phone: "",
     address: "",
     city: "",
     state: "",
-    country: "",
     pincode: "",
   });
-  const [placing, setPlacing] = useState(false);
+
+  const placing = createOrder.isPending || verifyPayment.isPending;
+  const { data: user, isLoading } = useAuth();
 
   useEffect(() => {
-    if (!user) navigate({ to: "/auth", replace: true });
-  }, [user, navigate]);
+    if (!isLoading && !user) {
+      navigate({ to: "/auth", replace: true });
+    }
+  }, [user, isLoading, navigate]);
+
+  useEffect(() => {
+    const pending = sessionStorage.getItem("pendingPayment");
+
+    if (pending) {
+      navigate({
+        to: "/order-verification",
+        replace: true,
+      });
+    }
+  }, []);
+
+  if (isLoading) return null;
 
   if (!user) return null;
 
@@ -58,28 +73,94 @@ function Checkout() {
   }
 
   async function placeOrderAction() {
-    setPlacing(true);
     try {
-      const order = await placeOrderMutation.mutateAsync(shippingAddress);
-      sessionStorage.setItem(
-        "lastOrder",
-        JSON.stringify({
-          orderNumber: order.orderNumber,
-          items: order.items,
-          total: order.totalAmount,
-          date: order.createdAt,
-        }),
-      );
-      z;
-      navigate({ to: "/order-confirmation", search: { id: order._id } });
+      if (
+        !shippingAddress.fullName ||
+        !shippingAddress.phone ||
+        !shippingAddress.address ||
+        !shippingAddress.city ||
+        !shippingAddress.state ||
+        !shippingAddress.pincode
+      ) {
+        toast.error("Please complete the shipping address.");
+        return;
+      }
+      if (!/^\d{10}$/.test(shippingAddress.phone)) {
+        toast.error("Enter a valid phone number");
+        return;
+      }
+
+      const loaded = await loadRazorpay();
+
+      if (!loaded) {
+        toast.error("Failed to load Razorpay");
+        return;
+      }
+
+      // 1. Create Razorpay order + pending order in DB
+      const { payment, order } = await createOrder.mutateAsync(shippingAddress);
+
+      const razorpay = new window.Razorpay({
+        key: payment.key,
+        amount: payment.amount,
+        currency: payment.currency,
+        order_id: payment.orderId,
+        prefill: {
+          name: shippingAddress.fullName,
+          email: user.email,
+          contact: shippingAddress.phone,
+        },
+        theme: {
+          color: "#2563eb",
+        },
+        name: "FerroCore",
+
+        handler: async (response) => {
+          sessionStorage.setItem(
+            "pendingPayment",
+            JSON.stringify({
+              orderId: order._id,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            }),
+          );
+
+          navigate({
+            to: "/order-verification",
+          });
+        },
+        modal: {
+          ondismiss() {
+            toast.info("Payment cancelled");
+          },
+        },
+      });
+
+      razorpay.on("payment.failed", (response) => {
+        toast.error(response.error.description);
+      });
+
+      razorpay.open();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Unable to place order");
-    } finally {
-      setPlacing(false);
+      toast.error(err instanceof Error ? err.message : "Payment verification failed");
     }
   }
 
   function next() {
+    if (step === 1) {
+      if (
+        !shippingAddress.fullName ||
+        !shippingAddress.phone ||
+        !shippingAddress.address ||
+        !shippingAddress.city ||
+        !shippingAddress.state ||
+        !shippingAddress.pincode
+      ) {
+        toast.error("Complete shipping information");
+        return;
+      }
+    }
     setStep((s) => Math.min(s + 1, 4));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -113,12 +194,31 @@ function Checkout() {
             <>
               <Panel icon={Building2} title="Customer Information">
                 <Grid>
-                  <Field label="Company name" placeholder="Acme Manufacturing Ltd." />
-                  <Field label="Tax / VAT number" placeholder="US 12-3456789" />
-                  <Field label="Contact name" placeholder="Jane Doe" />
-                  <Field label="Job title" placeholder="Procurement Manager" />
-                  <Field label="Email" placeholder="procurement@acme.com" />
-                  <Field label="Phone" placeholder="+1 555 000 0000" />
+                  <Field
+                    label="Full Name"
+                    placeholder="John Doe"
+                    value={shippingAddress.fullName}
+                    onChange={(value) =>
+                      setShippingAddress((prev) => ({
+                        ...prev,
+                        fullName: value,
+                      }))
+                    }
+                  />
+
+                  <Field
+                    label="Phone"
+                    placeholder="9876543210"
+                    value={shippingAddress.phone}
+                    onChange={(value) =>
+                      setShippingAddress((prev) => ({
+                        ...prev,
+                        phone: value,
+                      }))
+                    }
+                  />
+
+                  <Field label="Email" value={user.email} placeholder={user.email} readOnly full />
                 </Grid>
               </Panel>
               <Panel icon={Truck} title="Shipping Address">
@@ -135,7 +235,6 @@ function Checkout() {
                       }))
                     }
                   />
-                  <Field label="Address line 2" placeholder="Building C, Loading Dock 4" full />
                   <Field
                     label="City"
                     placeholder="Houston"
@@ -169,72 +268,9 @@ function Checkout() {
                       }))
                     }
                   />{" "}
-                  <Field
-                    label="Country"
-                    placeholder="United States"
-                    value={shippingAddress.country}
-                    onChange={(value) =>
-                      setShippingAddress((prev) => ({
-                        ...prev,
-                        country: value,
-                      }))
-                    }
-                  />
                 </Grid>
               </Panel>
-              <Panel icon={Building2} title="Billing Address">
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" defaultChecked className="accent-primary" />
-                  Same as shipping address
-                </label>
-              </Panel>
             </>
-          )}
-
-          {step === 2 && (
-            <Panel icon={Truck} title="Shipping Method">
-              <div className="space-y-3">
-                {[
-                  {
-                    id: "standard",
-                    label: "Standard Freight",
-                    desc: "7–10 business days · LTL carrier",
-                    price: 1240,
-                  },
-                  {
-                    id: "express",
-                    label: "Expedited Freight",
-                    desc: "3–5 business days · Priority dispatch",
-                    price: 2680,
-                  },
-                  {
-                    id: "intl",
-                    label: "International Ocean",
-                    desc: "FOB / CIF available · 4–6 weeks",
-                    price: 4800,
-                  },
-                ].map((s) => (
-                  <label
-                    key={s.id}
-                    className={`flex cursor-pointer items-center gap-4 border p-4 transition-colors ${shipping === s.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
-                  >
-                    <input
-                      type="radio"
-                      name="shipping"
-                      value={s.id}
-                      checked={shipping === s.id}
-                      onChange={() => setShipping(s.id)}
-                      className="accent-primary"
-                    />
-                    <div className="flex-1">
-                      <div className="text-sm font-semibold">{s.label}</div>
-                      <div className="text-xs text-muted-foreground">{s.desc}</div>
-                    </div>
-                    <div className="text-sm font-bold">{formatUSD(s.price)}</div>
-                  </label>
-                ))}
-              </div>
-            </Panel>
           )}
 
           {step === 3 && (
@@ -242,25 +278,15 @@ function Checkout() {
               <div className="space-y-3">
                 {[
                   {
-                    id: "card",
-                    label: "Corporate Credit Card",
-                    desc: "Visa, Mastercard, Amex · Instant authorization",
+                    id: "razorpay",
+                    label: "Pay Online",
+                    desc: "Pay online",
                   },
-                  {
-                    id: "wire",
-                    label: "Bank Wire (T/T)",
-                    desc: "Net-15 terms · For approved accounts",
-                  },
-                  {
-                    id: "lc",
-                    label: "Letter of Credit",
-                    desc: "International orders · 30 days processing",
-                  },
-                  {
-                    id: "net30",
-                    label: "Net-30 Purchase Order",
-                    desc: "For qualified business accounts",
-                  },
+                  // {
+                  //   id: "cod",
+                  //   label: "Cash on delivery",
+                  //   desc: "cod",
+                  // },
                 ].map((p) => (
                   <label
                     key={p.id}
@@ -281,13 +307,6 @@ function Checkout() {
                   </label>
                 ))}
               </div>
-              {payment === "card" && (
-                <div className="mt-5 grid gap-3 border-t border-border pt-5 md:grid-cols-2">
-                  <Field label="Card number" placeholder="4242 4242 4242 4242" full />
-                  <Field label="Expiry" placeholder="MM / YY" />
-                  <Field label="CVC" placeholder="123" />
-                </div>
-              )}
             </Panel>
           )}
 
@@ -296,17 +315,7 @@ function Checkout() {
               <div className="space-y-4 text-sm">
                 <ReviewRow
                   label="Items"
-                  value={`${totals.count} product${totals.count === 1 ? "" : "s"} (${formatUSD(totals.subtotal)})`}
-                />
-                <ReviewRow
-                  label="Shipping method"
-                  value={
-                    shipping === "standard"
-                      ? "Standard Freight"
-                      : shipping === "express"
-                        ? "Expedited Freight"
-                        : "International Ocean"
-                  }
+                  value={`${totals.count} product${totals.count === 1 ? "" : "s"} (${formatINR(totals.subtotal)})`}
                 />
                 <ReviewRow
                   label="Payment method"
@@ -320,7 +329,7 @@ function Checkout() {
                           : "Net-30 PO"
                   }
                 />
-                <ReviewRow label="Order total" value={formatUSD(totals.total)} highlight />
+                <ReviewRow label="Order total" value={formatINR(totals.total)} highlight />
               </div>
               <label className="mt-6 flex items-start gap-2 text-xs text-muted-foreground">
                 <input type="checkbox" defaultChecked className="mt-0.5 accent-primary" />I agree to
@@ -328,7 +337,6 @@ function Checkout() {
               </label>
             </Panel>
           )}
-
           {/* Nav buttons */}
           <div className="flex flex-wrap items-center gap-3 pt-2">
             {step > 1 ? (
@@ -387,20 +395,20 @@ function Checkout() {
           <dl className="mt-5 space-y-2.5 border-t border-border pt-5 text-sm">
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Subtotal</dt>
-              <dd className="font-semibold">{formatUSD(totals.subtotal)}</dd>
+              <dd className="font-semibold">{formatINR(totals.subtotal)}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Shipping</dt>
-              <dd className="font-semibold">{formatUSD(totals.shipping)}</dd>
+              <dd className="font-semibold">{formatINR(totals.shipping)}</dd>
             </div>
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Tax</dt>
-              <dd className="font-semibold">{formatUSD(totals.tax)}</dd>
+              <dd className="font-semibold">{formatINR(totals.tax)}</dd>
             </div>
           </dl>
           <div className="mt-4 flex items-baseline justify-between border-t border-border pt-4">
             <span className="text-sm font-semibold uppercase tracking-wider">Total</span>
-            <span className="text-2xl font-bold">{formatUSD(totals.total)}</span>
+            <span className="text-2xl font-bold">{formatINR(totals.total)}</span>
           </div>
           <p className="mt-4 text-center text-xs text-muted-foreground">
             By placing this order you agree to FerroCore's Terms of Sale.
@@ -441,12 +449,14 @@ function Field({
   value,
   onChange,
   full = false,
+  readOnly = false,
 }: {
   label: string;
-  placeholder: string;
+  placeholder?: string;
   value: string;
-  onChange: (value: string) => void;
+  onChange?: (value: string) => void;
   full?: boolean;
+  readOnly?: boolean;
 }) {
   return (
     <label className={`flex flex-col gap-1.5 text-xs ${full ? "md:col-span-2" : ""}`}>
@@ -454,8 +464,9 @@ function Field({
 
       <input
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange?.(e.target.value)}
         placeholder={placeholder}
+        readOnly={readOnly}
         className="border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
       />
     </label>

@@ -26,23 +26,19 @@ export const authApi = {
     return res.user;
   },
 
-  async me(): Promise<User> {
+  async me(): Promise<User | null> {
+    const token = tokenStore.get();
+
+    if (!token) {
+      return null;
+    }
+
     const res = await apiFetch<{
       success: boolean;
       user: User;
     }>("/auth/me");
-    console.log("me res", res);
 
     return res.user;
   },
-
-  async logout() {
-    try {
-      await apiFetch("/auth/logout", {
-        method: "POST",
-      });
-    } finally {
-      tokenStore.clear();
-    }
-  },
 };
+

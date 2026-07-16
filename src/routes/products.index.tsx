@@ -51,12 +51,13 @@ function ProductsPage() {
     inStock: search.inStock,
     limit: 12,
   };
-  // const debouncedKeyword = useDebounce(filters.keyword, 400);
   const { data, isLoading, isFetching, isError, error } = useProducts(filters);
   const products = data?.products ?? [];
 
   const pagination = data?.pagination;
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+
+  const categorySpecifications = filters.category ? (filterData?.specifications ?? {}) : {};
 
   const updateFilters = (updates: Partial<ProductFilters>) => {
     navigate({
@@ -115,7 +116,7 @@ function ProductsPage() {
           ))}
         </ul>
       </div>
-      {Object.entries(filterData?.specifications ?? {}).map(([specName, values]) => (
+      {Object.entries(categorySpecifications).map(([specName, values]) => (
         <div key={specName} className="mt-6 border-t border-border pt-5">
           <h4 className="text-xs font-semibold uppercase tracking-wider">{specName}</h4>
 
@@ -236,7 +237,7 @@ function ProductsPage() {
               <SlidersHorizontal className="h-4 w-4" /> Filter & Sort
             </button>
             <div className="flex flex-wrap items-center gap-3 border border-border bg-card p-3">
-              <div className="relative flex-1 min-w-[200px]">
+              <div className="relative flex-1 min-w-200px">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   value={filters.keyword ?? ""}
