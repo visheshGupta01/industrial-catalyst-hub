@@ -9,23 +9,38 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCart, useCartSummary } from "@/hooks/useCart";
 import { useCreatePaymentOrder, useVerifyPayment } from "@/hooks/usePayment";
 import { loadRazorpay } from "@/lib/loadRazorpay";
+import { useCalculateShipment } from "@/hooks/useShipment";
+
 export const Route = createFileRoute("/checkout")({
   head: () => ({ meta: [{ title: "Checkout — FerroCore" }] }),
   component: Checkout,
 });
 
-// Map stepper index: 0 Cart, 1 Information, 2 Shipping, 3 Payment, 4 Review, 5 Confirmation
+interface FormErrors {
+  fullName?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+}
+
 function Checkout() {
   const createOrder = useCreatePaymentOrder();
   const verifyPayment = useVerifyPayment();
+  const calculateShipment = useCalculateShipment();
   const { data: cart } = useCart();
-
   const items = cart?.items ?? [];
-
   const totals = useCartSummary();
   const navigate = useNavigate();
-  const [step, setStep] = useState(1); // start at Information
+
+  const [step, setStep] = useState(1);
   const [payment, setPayment] = useState("razorpay");
+  const [liveShippingCost, setLiveShippingCost] = useState<number | null>(null);
+
+  // State tracking explicit error visual markers
+  const [errors, setErrors] = useState<FormErrors>({});
+
   const [shippingAddress, setShippingAddress] = useState({
     fullName: "",
     phone: "",
@@ -46,17 +61,48 @@ function Checkout() {
 
   useEffect(() => {
     const pending = sessionStorage.getItem("pendingPayment");
-
     if (pending) {
-      navigate({
-        to: "/order-verification",
-        replace: true,
-      });
+      navigate({ to: "/order-verification", replace: true });
     }
   }, []);
 
-  if (isLoading) return null;
+  // Live Pincode Verification & Error Removal Hook
+  useEffect(() => {
+    if (/^\d{6}$/.test(shippingAddress.pincode)) {
+      setErrors((prev) => ({ ...prev, pincode: undefined }));
+      async function autoFetchRates() {
+        try {
+          toast.loading("Calculating live shipping fees...", { id: "ship-calc" });
+          const rateDetails = await calculateShipment.mutateAsync(shippingAddress.pincode);
 
+          if (rateDetails && typeof rateDetails.shippingCost === "number") {
+            setLiveShippingCost(rateDetails.shippingCost);
+            toast.success(`Shipping computed via ${rateDetails.courier || "Courier"}!`, {
+              id: "ship-calc",
+            });
+          } else {
+            throw new Error("Invalid response structure");
+          }
+        } catch (error: any) {
+          setLiveShippingCost(null);
+          setErrors((prev) => ({
+            ...prev,
+            pincode: error.message || "Pincode is not serviceable by our couriers",
+          }));
+          toast.error(error.message || "Pincode is not serviceable by our couriers", {
+            id: "ship-calc",
+          });
+        }
+      }
+      autoFetchRates();
+    } else {
+      if (liveShippingCost !== null) {
+        setLiveShippingCost(null);
+      }
+    }
+  }, [shippingAddress.pincode]);
+
+  if (isLoading) return null;
   if (!user) return null;
 
   if (items.length === 0) {
@@ -72,49 +118,61 @@ function Checkout() {
     );
   }
 
+  // Centralized Validation Engine Validator
+  const validateForm = (): boolean => {
+    const tempErrors: FormErrors = {};
+
+    if (!shippingAddress.fullName.trim()) tempErrors.fullName = "Full name is required";
+
+    if (!shippingAddress.phone.trim()) {
+      tempErrors.phone = "Phone number is required";
+    } else if (!/^\d{10}$/.test(shippingAddress.phone.trim())) {
+      tempErrors.phone = "Enter a valid 10-digit phone number";
+    }
+
+    if (!shippingAddress.address.trim()) tempErrors.address = "Shipping address line 1 is required";
+    if (!shippingAddress.city.trim()) tempErrors.city = "City is required";
+    if (!shippingAddress.state.trim()) tempErrors.state = "State / Region is required";
+
+    if (!shippingAddress.pincode.trim()) {
+      tempErrors.pincode = "Postal ZIP code is required";
+    } else if (!/^\d{6}$/.test(shippingAddress.pincode.trim())) {
+      tempErrors.pincode = "Enter a valid 6-digit PIN code";
+    } else if (liveShippingCost === null) {
+      tempErrors.pincode = "This region is currently unserviceable by our couriers";
+    }
+
+    setErrors(tempErrors);
+    return Object.keys(tempErrors).length === 0;
+  };
+
   async function placeOrderAction() {
     try {
-      if (
-        !shippingAddress.fullName ||
-        !shippingAddress.phone ||
-        !shippingAddress.address ||
-        !shippingAddress.city ||
-        !shippingAddress.state ||
-        !shippingAddress.pincode
-      ) {
-        toast.error("Please complete the shipping address.");
-        return;
-      }
-      if (!/^\d{10}$/.test(shippingAddress.phone)) {
-        toast.error("Enter a valid phone number");
+      if (!validateForm()) {
+        toast.error("Please resolve address validation errors before placing your order.");
         return;
       }
 
       const loaded = await loadRazorpay();
-
       if (!loaded) {
-        toast.error("Failed to load Razorpay");
+        toast.error("Failed to load Razorpay script");
         return;
       }
 
-      // 1. Create Razorpay order + pending order in DB
-      const { payment, order } = await createOrder.mutateAsync(shippingAddress);
+      const { payment: paymentConfig, order } = await createOrder.mutateAsync(shippingAddress);
 
       const razorpay = new window.Razorpay({
-        key: payment.key,
-        amount: payment.amount,
-        currency: payment.currency,
-        order_id: payment.orderId,
+        key: paymentConfig.key,
+        amount: paymentConfig.amount,
+        currency: paymentConfig.currency,
+        order_id: paymentConfig.orderId,
         prefill: {
           name: shippingAddress.fullName,
           email: user.email,
           contact: shippingAddress.phone,
         },
-        theme: {
-          color: "#2563eb",
-        },
+        theme: { color: "#2563eb" },
         name: "FerroCore",
-
         handler: async (response) => {
           sessionStorage.setItem(
             "pendingPayment",
@@ -125,10 +183,7 @@ function Checkout() {
               razorpaySignature: response.razorpay_signature,
             }),
           );
-
-          navigate({
-            to: "/order-verification",
-          });
+          navigate({ to: "/order-verification" });
         },
         modal: {
           ondismiss() {
@@ -137,37 +192,33 @@ function Checkout() {
         },
       });
 
-      razorpay.on("payment.failed", (response) => {
+      razorpay.on("payment.failed", (response: any) => {
         toast.error(response.error.description);
       });
-
       razorpay.open();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Payment verification failed");
     }
   }
 
-  function next() {
+  async function next() {
     if (step === 1) {
-      if (
-        !shippingAddress.fullName ||
-        !shippingAddress.phone ||
-        !shippingAddress.address ||
-        !shippingAddress.city ||
-        !shippingAddress.state ||
-        !shippingAddress.pincode
-      ) {
-        toast.error("Complete shipping information");
+      if (!validateForm()) {
+        toast.error("Please fix all form validation requirements to continue.");
         return;
       }
     }
-    setStep((s) => Math.min(s + 1, 4));
+    setStep((s) => Math.min(s + 1, 3));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
   function prev() {
     setStep((s) => Math.max(1, s - 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
+  const finalActiveShippingCost = liveShippingCost !== null ? liveShippingCost : 0;
+  const computedGrandTotal = totals.subtotal + finalActiveShippingCost;
 
   return (
     <SiteLayout>
@@ -198,26 +249,25 @@ function Checkout() {
                     label="Full Name"
                     placeholder="John Doe"
                     value={shippingAddress.fullName}
-                    onChange={(value) =>
-                      setShippingAddress((prev) => ({
-                        ...prev,
-                        fullName: value,
-                      }))
-                    }
+                    error={errors.fullName}
+                    onChange={(value) => {
+                      setShippingAddress((p) => ({ ...p, fullName: value }));
+                      if (errors.fullName) setErrors((prev) => ({ ...prev, fullName: undefined }));
+                    }}
                   />
-
                   <Field
                     label="Phone"
                     placeholder="9876543210"
                     value={shippingAddress.phone}
-                    onChange={(value) =>
-                      setShippingAddress((prev) => ({
-                        ...prev,
-                        phone: value,
-                      }))
-                    }
+                    error={errors.phone}
+                    onChange={(value) => {
+                      // Only permit numerical digits up to 10 characters
+                      if (/^\d*$/.test(value) && value.length <= 10) {
+                        setShippingAddress((p) => ({ ...p, phone: value }));
+                        if (errors.phone) setErrors((prev) => ({ ...prev, phone: undefined }));
+                      }
+                    }}
                   />
-
                   <Field label="Email" value={user.email} placeholder={user.email} readOnly full />
                 </Grid>
               </Panel>
@@ -228,89 +278,73 @@ function Checkout() {
                     placeholder="1247 Industrial Pkwy"
                     full
                     value={shippingAddress.address}
-                    onChange={(value) =>
-                      setShippingAddress((prev) => ({
-                        ...prev,
-                        address: value,
-                      }))
-                    }
+                    error={errors.address}
+                    onChange={(value) => {
+                      setShippingAddress((p) => ({ ...p, address: value }));
+                      if (errors.address) setErrors((prev) => ({ ...prev, address: undefined }));
+                    }}
                   />
                   <Field
                     label="City"
                     placeholder="Houston"
                     value={shippingAddress.city}
-                    onChange={(value) =>
-                      setShippingAddress((prev) => ({
-                        ...prev,
-                        city: value,
-                      }))
-                    }
-                  />{" "}
+                    error={errors.city}
+                    onChange={(value) => {
+                      setShippingAddress((p) => ({ ...p, city: value }));
+                      if (errors.city) setErrors((prev) => ({ ...prev, city: undefined }));
+                    }}
+                  />
                   <Field
                     label="State / Region"
                     placeholder="Texas"
                     value={shippingAddress.state}
-                    onChange={(value) =>
-                      setShippingAddress((prev) => ({
-                        ...prev,
-                        state: value,
-                      }))
-                    }
-                  />{" "}
+                    error={errors.state}
+                    onChange={(value) => {
+                      setShippingAddress((p) => ({ ...p, state: value }));
+                      if (errors.state) setErrors((prev) => ({ ...prev, state: undefined }));
+                    }}
+                  />
                   <Field
                     label="Postal / ZIP code"
-                    placeholder="77041"
+                    placeholder="6-digit PIN code"
                     value={shippingAddress.pincode}
-                    onChange={(value) =>
-                      setShippingAddress((prev) => ({
-                        ...prev,
-                        pincode: value,
-                      }))
-                    }
-                  />{" "}
+                    error={errors.pincode}
+                    onChange={(value) => {
+                      if (/^\d*$/.test(value) && value.length <= 6) {
+                        setShippingAddress((p) => ({ ...p, pincode: value }));
+                        if (errors.pincode) setErrors((prev) => ({ ...prev, pincode: undefined }));
+                      }
+                    }}
+                  />
                 </Grid>
               </Panel>
             </>
           )}
 
-          {step === 3 && (
+          {step === 2 && (
             <Panel icon={CreditCard} title="Payment Method">
               <div className="space-y-3">
-                {[
-                  {
-                    id: "razorpay",
-                    label: "Pay Online",
-                    desc: "Pay online",
-                  },
-                  // {
-                  //   id: "cod",
-                  //   label: "Cash on delivery",
-                  //   desc: "cod",
-                  // },
-                ].map((p) => (
-                  <label
-                    key={p.id}
-                    className={`flex cursor-pointer items-center gap-4 border p-4 transition-colors ${payment === p.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      value={p.id}
-                      checked={payment === p.id}
-                      onChange={() => setPayment(p.id)}
-                      className="accent-primary"
-                    />
-                    <div className="flex-1">
-                      <div className="text-sm font-semibold">{p.label}</div>
-                      <div className="text-xs text-muted-foreground">{p.desc}</div>
+                <label className="flex cursor-pointer items-center gap-4 border p-4 transition-colors border-primary bg-primary/5">
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="razorpay"
+                    checked={payment === "razorpay"}
+                    onChange={() => setPayment("razorpay")}
+                    className="accent-primary"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold">Pay Online (Razorpay)</div>
+                    <div className="text-xs text-muted-foreground">
+                      Secure payment via UPI, Cards, and Netbanking.
                     </div>
-                  </label>
-                ))}
+                  </div>
+                </label>
               </div>
             </Panel>
           )}
 
-          {step === 4 && (
+          {step === 3 && (
             <Panel icon={CheckCircle2} title="Review & Confirm">
               <div className="space-y-4 text-sm">
                 <ReviewRow
@@ -318,18 +352,14 @@ function Checkout() {
                   value={`${totals.count} product${totals.count === 1 ? "" : "s"} (${formatINR(totals.subtotal)})`}
                 />
                 <ReviewRow
-                  label="Payment method"
-                  value={
-                    payment === "card"
-                      ? "Corporate Credit Card"
-                      : payment === "wire"
-                        ? "Bank Wire (T/T)"
-                        : payment === "lc"
-                          ? "Letter of Credit"
-                          : "Net-30 PO"
-                  }
+                  label="Shipping charges"
+                  value={liveShippingCost !== null ? formatINR(liveShippingCost) : "Calculating..."}
                 />
-                <ReviewRow label="Order total" value={formatINR(totals.total)} highlight />
+                <ReviewRow
+                  label="Payment method"
+                  value={payment === "razorpay" ? "Online Payment (Razorpay)" : "Standard Gateway"}
+                />
+                <ReviewRow label="Order total" value={formatINR(computedGrandTotal)} highlight />
               </div>
               <label className="mt-6 flex items-start gap-2 text-xs text-muted-foreground">
                 <input type="checkbox" defaultChecked className="mt-0.5 accent-primary" />I agree to
@@ -337,7 +367,7 @@ function Checkout() {
               </label>
             </Panel>
           )}
-          {/* Nav buttons */}
+
           <div className="flex flex-wrap items-center gap-3 pt-2">
             {step > 1 ? (
               <button
@@ -354,7 +384,8 @@ function Checkout() {
                 <ArrowLeft className="h-4 w-4" /> Back to cart
               </Link>
             )}
-            {step < 4 ? (
+
+            {step < 3 ? (
               <button
                 onClick={next}
                 className="ml-auto inline-flex items-center gap-2 bg-primary px-6 py-3 text-xs font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90"
@@ -399,26 +430,24 @@ function Checkout() {
             </div>
             <div className="flex justify-between">
               <dt className="text-muted-foreground">Shipping</dt>
-              <dd className="font-semibold">{formatINR(totals.shipping)}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-muted-foreground">Tax</dt>
-              <dd className="font-semibold">{formatINR(totals.tax)}</dd>
+              <dd
+                className={`font-semibold ${liveShippingCost !== null ? "text-blue-600 font-bold" : ""}`}
+              >
+                {liveShippingCost !== null ? formatINR(liveShippingCost) : "Enter pincode"}
+              </dd>
             </div>
           </dl>
           <div className="mt-4 flex items-baseline justify-between border-t border-border pt-4">
             <span className="text-sm font-semibold uppercase tracking-wider">Total</span>
-            <span className="text-2xl font-bold">{formatINR(totals.total)}</span>
+            <span className="text-2xl font-bold">{formatINR(computedGrandTotal)}</span>
           </div>
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            By placing this order you agree to FerroCore's Terms of Sale.
-          </p>
         </aside>
       </div>
     </SiteLayout>
   );
 }
 
+// Subcomponents helper layout utilities
 function Panel({
   icon: Icon,
   title,
@@ -443,11 +472,13 @@ function Grid({ children }: { children: React.ReactNode }) {
   return <div className="grid gap-4 md:grid-cols-2">{children}</div>;
 }
 
+// FIXED: Child Field Component updated to conditionally inject error text structures
 function Field({
   label,
   placeholder,
   value,
   onChange,
+  error,
   full = false,
   readOnly = false,
 }: {
@@ -455,21 +486,28 @@ function Field({
   placeholder?: string;
   value: string;
   onChange?: (value: string) => void;
+  error?: string;
   full?: boolean;
   readOnly?: boolean;
 }) {
   return (
-    <label className={`flex flex-col gap-1.5 text-xs ${full ? "md:col-span-2" : ""}`}>
-      <span className="font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
-
-      <input
-        value={value}
-        onChange={(e) => onChange?.(e.target.value)}
-        placeholder={placeholder}
-        readOnly={readOnly}
-        className="border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
-      />
-    </label>
+    <div className={`flex flex-col gap-1.5 ${full ? "md:col-span-2" : ""}`}>
+      <label className="flex flex-col gap-1.5 text-xs">
+        <span className="font-semibold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </span>
+        <input
+          value={value}
+          onChange={(e) => onChange?.(e.target.value)}
+          placeholder={placeholder}
+          readOnly={readOnly}
+          className={`border bg-background px-3 py-2 text-sm focus:outline-none transition-colors ${
+            error ? "border-red-500 focus:border-red-500" : "border-input focus:border-primary"
+          }`}
+        />
+      </label>
+      {error && <span className="text-[11px] font-medium text-red-500 mt-0.5">{error}</span>}
+    </div>
   );
 }
 
