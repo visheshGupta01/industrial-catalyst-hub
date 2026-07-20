@@ -11,6 +11,7 @@ import {
   Search,
   FolderTree,
   Layers,
+  Quote,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -21,6 +22,7 @@ const NAV = [
   { to: "/admin/subcategories", label: "Sub-categories", icon: Layers },
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { to: "/admin/users", label: "Users", icon: Users },
+  {to:"/admin/quotes", label: "Quotes", icon: Quote}
   // { to: "/admin/coupons", label: "Coupons", icon: Ticket },
   // { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   // { to: "/admin/settings", label: "Settings", icon: Settings },

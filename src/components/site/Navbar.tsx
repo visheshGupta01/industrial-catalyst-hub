@@ -274,7 +274,7 @@ export function Navbar() {
                     <UserIcon className="h-4 w-4" /> My profile
                   </Link>
                   <Link
-                    to="/order-tracking"
+                    to="/orders"
                     onClick={() => setMenu(false)}
                     className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-surface"
                   >
@@ -402,7 +402,7 @@ export function Navbar() {
                     </Link>
                   ))}
                   <Link
-                    to="/order-tracking"
+                    to="/orders"
                     onClick={() => setOpen(false)}
                     className="flex items-center gap-3 border-b border-border py-3 text-sm font-medium"
                   >
@@ -410,7 +410,6 @@ export function Navbar() {
                   </Link>
                   <button
                     onClick={() => {
-                      console.log("LOgout");
                       logout.mutate(undefined, {
                         onSuccess: () => {
                           navigate({ to: "/" });

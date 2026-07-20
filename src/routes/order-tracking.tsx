@@ -1,181 +1,228 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Check, Package, Truck, MapPin, FileText, Phone, Clock, ShieldCheck } from "lucide-react";
+import {
+  Loader2,
+  ArrowLeft,
+  Truck,
+  CheckCircle2,
+  Clock,
+  MapPin,
+  ExternalLink,
+  ClipboardList,
+} from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
-import { z } from "zod";
+import { useTrackShipment } from "@/hooks/useShipment";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/order-tracking")({
-  validateSearch: z.object({ id: z.string().optional() }),
-  head: () => ({ meta: [{ title: "Order Tracking — FerroCore" }] }),
-  component: OrderTracking,
+  validateSearch: (search: Record<string, unknown>) => ({
+    orderId: (search.orderId as string) || "",
+  }),
+  head: () => ({ meta: [{ title: "Package Tracking Trace — FerroCore" }] }),
+  component: OrderTrackingPage,
 });
 
-const STAGES = [
-  { id: "placed", label: "Order Placed", desc: "Order received and acknowledged", icon: FileText, date: "Jun 11, 2026 · 09:42" },
-  { id: "confirmed", label: "Confirmed", desc: "Procurement team confirmed inventory & pricing", icon: ShieldCheck, date: "Jun 11, 2026 · 11:18" },
-  { id: "processing", label: "Processing", desc: "Items being prepared for dispatch at Houston DC", icon: Package, date: "Jun 11, 2026 · 16:05" },
-  { id: "packed", label: "Packed", desc: "Goods packed, awaiting carrier pickup", icon: Package, date: null },
-  { id: "shipped", label: "Shipped", desc: "Carrier picked up · in transit", icon: Truck, date: null },
-  { id: "delivered", label: "Delivered", desc: "Delivered to consignee", icon: MapPin, date: null },
-];
+function OrderTrackingPage() {
+  const { orderId } = Route.useSearch();
+  const { data: user, isLoading: authLoading } = useAuth();
+  const {
+    data: trackingData,
+    isLoading: trackingLoading,
+    isError,
+    error,
+  } = useTrackShipment(orderId);
+  const navigate = useNavigate();
 
-const CURRENT = 2; // Processing
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate({ to: "/auth", replace: true });
+    }
+    if (!authLoading && !orderId) {
+      navigate({ to: "/orders", replace: true });
+    }
+  }, [user, authLoading, orderId, navigate]);
 
-function OrderTracking() {
-  const { id } = Route.useSearch();
-  const orderNumber = id ?? "ORD-433566";
-  const eta = new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  if (authLoading || trackingLoading) {
+    return (
+      <SiteLayout>
+        <div className="container-page flex items-center justify-center gap-2 py-32 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          Connecting to carrier network nodes...
+        </div>
+      </SiteLayout>
+    );
+  }
+
+  if (!user || !orderId) return null;
+
+  // Extract core parameters safely out of your Shiprocket service matrix response
+  const trackInfo = trackingData?.tracking_data?.shipment_track?.[0];
+  const activities = trackingData?.tracking_data?.shipment_track_activities ?? [];
+
+  const currentStatus = trackInfo?.current_status || "Processing Order";
+  const courierName = trackInfo?.courier_name || "Partner Carrier";
+  const awbCode = trackInfo?.awb_code || "N/A";
 
   return (
     <SiteLayout>
       <section className="border-b border-border bg-surface">
-        <div className="container-page py-10">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Link to="/" className="hover:text-primary">Home</Link>
-            <span>/</span>
-            <span className="text-foreground">Order Tracking</span>
-          </div>
-          <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold md:text-4xl">Order Tracking</h1>
-              <p className="mt-1 text-sm text-muted-foreground">Real-time status of your industrial procurement order.</p>
-            </div>
-            <div className="border border-border bg-card px-4 py-3">
-              <div className="text-[11px] uppercase tracking-wider text-muted-foreground">Order Number</div>
-              <div className="font-mono text-lg font-bold">{orderNumber}</div>
-            </div>
-          </div>
+        <div className="container-page py-8">
+          <Link
+            to="/orders"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to history
+          </Link>
+          <h1 className="mt-4 text-3xl font-bold md:text-4xl">Trace Shipments</h1>
+          <p className="mt-1 text-sm text-muted-foreground font-mono">
+            AWB Code Manifest: <span className="font-bold text-foreground">{awbCode}</span>
+          </p>
         </div>
       </section>
 
-      <section className="container-page grid gap-8 py-10 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-6">
-          {/* Status overview */}
-          <div className="grid grid-cols-1 gap-3 border border-border bg-card p-5 sm:grid-cols-3">
-            <Stat label="Current Status" value={STAGES[CURRENT].label} accent />
-            <Stat label="Estimated Delivery" value={eta} />
-            <Stat label="Carrier" value="FedEx Freight Priority" />
+      <section className="container-page py-10">
+        {isError ? (
+          <div className="border border-border p-8 text-center bg-card max-w-xl mx-auto">
+            <Clock className="h-8 w-8 text-amber-500 mx-auto" />
+            <h2 className="text-base font-bold mt-3 text-foreground">Logistics sync in progress</h2>
+            <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+              {(error as any)?.message ||
+                "The courier partner has received the shipment manifest but hasn't updated its live routing nodes yet. Please check back in 12–24 hours."}
+            </p>
           </div>
+        ) : (
+          <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
+            {/* Left Column: Live Progress Checkpoints Timeline */}
+            <div className="space-y-6">
+              <div className="border border-border bg-card p-6">
+                <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground flex items-center gap-2 mb-6">
+                  <ClipboardList className="h-4 w-4 text-primary" />
+                  Routing Transit Milestones
+                </h2>
 
-          {/* Timeline */}
-          <div className="border border-border bg-card">
-            <header className="flex items-center gap-2 border-b border-border bg-surface px-5 py-3">
-              <Clock className="h-4 w-4 text-primary" />
-              <h2 className="text-xs font-semibold uppercase tracking-[0.18em]">Shipment Timeline</h2>
-            </header>
-            <ol className="relative px-5 py-6">
-              <span className="absolute left-[2.1rem] top-8 bottom-8 w-px bg-border" aria-hidden />
-              {STAGES.map((s, i) => {
-                const done = i < CURRENT;
-                const active = i === CURRENT;
-                const Icon = s.icon;
-                return (
-                  <li key={s.id} className="relative flex gap-4 py-4">
-                    <span
-                      className={`relative z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 ${
-                        done
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : active
-                          ? "border-accent bg-accent text-accent-foreground animate-pulse"
-                          : "border-border bg-background text-muted-foreground"
-                      }`}
-                    >
-                      {done ? <Check className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
-                    </span>
-                    <div className="min-w-0 flex-1 pt-1">
-                      <div className="flex flex-wrap items-baseline justify-between gap-2">
-                        <h3 className={`text-sm font-bold ${done || active ? "text-foreground" : "text-muted-foreground"}`}>{s.label}</h3>
-                        {s.date && <span className="font-mono text-[11px] text-muted-foreground">{s.date}</span>}
-                      </div>
-                      <p className={`mt-0.5 text-sm ${done || active ? "text-muted-foreground" : "text-muted-foreground/60"}`}>{s.desc}</p>
-                      {active && (
-                        <div className="mt-2 inline-flex items-center gap-1.5 bg-accent/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-accent">
-                          In progress
-                        </div>
-                      )}
+                {activities.length === 0 ? (
+                  <div className="text-sm text-muted-foreground py-4 flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-primary animate-pulse" />
+                    Shipment created. Waiting for carrier pickup trucks to scan the manifest parcel.
+                  </div>
+                ) : (
+                  <ol className="relative border-l border-border ml-3 pl-6 space-y-6">
+                    {activities.map((act, index) => {
+                      const isFirst = index === 0;
+                      return (
+                        <li key={index} className="relative">
+                          {/* Timeline node icon separator element indicator status indicators */}
+                          <span
+                            className={`absolute -left-[31px] top-0.5 grid h-5 w-5 place-items-center rounded-full border bg-background text-white ${
+                              isFirst
+                                ? "border-primary bg-primary"
+                                : "border-border bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            <MapPin className="h-3 w-3" />
+                          </span>
+
+                          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+                            <h3
+                              className={`text-sm font-bold ${isFirst ? "text-primary font-bold text-base" : "text-foreground"}`}
+                            >
+                              {act.activity}
+                            </h3>
+                            <span className="text-[11px] font-mono text-muted-foreground shrink-0">
+                              {new Date(act.date).toLocaleString("en-IN", {
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+
+                          {act.location && (
+                            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 font-medium">
+                              Location Node:{" "}
+                              <span className="text-foreground font-semibold">{act.location}</span>
+                            </p>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                )}
+              </div>
+            </div>
+
+            {/* Right Column: Order Summary Info & Logistics Metadata Sidebar Card */}
+            <aside className="space-y-6 lg:sticky lg:top-28 lg:self-start">
+              <div className="border border-border bg-card p-6">
+                <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground border-b border-border pb-3">
+                  Shipment Parameters
+                </h2>
+
+                <dl className="mt-4 space-y-4 text-xs">
+                  <div>
+                    <dt className="text-muted-foreground uppercase tracking-wider font-semibold">
+                      Active Carrier
+                    </dt>
+                    <dd className="text-sm font-bold text-foreground mt-1 flex items-center gap-1.5">
+                      <Truck className="h-4 w-4 text-primary" />
+                      {courierName}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt className="text-muted-foreground uppercase tracking-wider font-semibold">
+                      Consignment Status
+                    </dt>
+                    <dd className="mt-1.5">
+                      <span className="inline-flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 font-bold uppercase tracking-wider text-[10px]">
+                        {currentStatus}
+                      </span>
+                    </dd>
+                  </div>
+
+                  {trackInfo?.pickup_date && (
+                    <div>
+                      <dt className="text-muted-foreground uppercase tracking-wider font-semibold">
+                        Hub Dispatched Date
+                      </dt>
+                      <dd className="text-sm font-semibold text-foreground mt-1">
+                        {new Date(trackInfo.pickup_date).toLocaleDateString("en-IN")}
+                      </dd>
                     </div>
-                  </li>
-                );
-              })}
-            </ol>
-          </div>
+                  )}
 
-          {/* Tracking notes */}
-          <div className="border border-border bg-card">
-            <header className="flex items-center gap-2 border-b border-border bg-surface px-5 py-3">
-              <FileText className="h-4 w-4 text-primary" />
-              <h2 className="text-xs font-semibold uppercase tracking-[0.18em]">Tracking Notes</h2>
-            </header>
-            <ul className="divide-y divide-border">
-              {[
-                { date: "Jun 11, 16:05", note: "Items moved to packing station 04 · QC inspection passed" },
-                { date: "Jun 11, 11:18", note: "Order confirmed by procurement specialist M. Hartley" },
-                { date: "Jun 11, 09:42", note: "Order received via web portal · auto-acknowledged" },
-              ].map((n) => (
-                <li key={n.date} className="flex gap-4 px-5 py-3 text-sm">
-                  <span className="w-32 shrink-0 font-mono text-xs text-muted-foreground">{n.date}</span>
-                  <span>{n.note}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
+                  {trackInfo?.awb_code && (
+                    <div className="pt-2 border-t border-border">
+                      <a
+                        href={`https://shiprocket.co/tracking/${trackInfo.awb_code}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex w-full items-center justify-center gap-1.5 bg-surface border border-border px-4 py-2.5 font-semibold uppercase tracking-wider text-muted-foreground hover:border-primary hover:text-primary transition-all text-[11px]"
+                      >
+                        Shiprocket Web Tracker <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
+                </dl>
+              </div>
 
-        {/* Sidebar */}
-        <aside className="space-y-4">
-          <div className="border border-border bg-card p-5">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              <MapPin className="h-4 w-4 text-primary" /> Shipping Address
-            </div>
-            <address className="mt-3 not-italic text-sm leading-relaxed">
-              <div className="font-semibold">Acme Manufacturing Ltd.</div>
-              <div className="text-muted-foreground">Attn: Jane Doe — Procurement</div>
-              <div className="text-muted-foreground">1247 Industrial Pkwy</div>
-              <div className="text-muted-foreground">Building C, Loading Dock 4</div>
-              <div className="text-muted-foreground">Houston, TX 77041 · USA</div>
-            </address>
+              <div className="border border-blue-200 bg-blue-50/40 p-4 text-xs text-blue-700 leading-relaxed">
+                <h4 className="font-bold flex items-center gap-1 text-blue-800">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> B2B Procurement Policy Notice
+                </h4>
+                <p className="mt-1.5">
+                  Cargo weights and container dimension manifests have been logged under standard
+                  freight regulations. If you note any handling anomalies or structural package
+                  deformations upon transit delivery, please capture photographic evidence before
+                  signing off on the carrier's invoice.
+                </p>
+              </div>
+            </aside>
           </div>
-
-          <div className="border border-border bg-card p-5">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              <Truck className="h-4 w-4 text-primary" /> Shipment Details
-            </div>
-            <dl className="mt-3 space-y-2 text-sm">
-              <Row label="Method" value="Expedited LTL Freight" />
-              <Row label="Tracking #" value="FX-8842-09115-22" mono />
-              <Row label="Incoterms" value="DAP — Delivered at Place" />
-              <Row label="Insurance" value="Full value coverage" />
-            </dl>
-          </div>
-
-          <div className="border border-border bg-card p-5">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              <Phone className="h-4 w-4 text-primary" /> Need help?
-            </div>
-            <p className="mt-3 text-sm text-muted-foreground">Your dedicated account manager is available 24/7 for any shipment inquiries.</p>
-            <button className="mt-4 inline-flex w-full items-center justify-center gap-2 border border-primary px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-primary hover:bg-primary hover:text-primary-foreground">
-              Contact account manager
-            </button>
-          </div>
-        </aside>
+        )}
       </section>
     </SiteLayout>
-  );
-}
-
-function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div>
-      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
-      <div className={`mt-1 text-base font-bold ${accent ? "text-accent" : ""}`}>{value}</div>
-    </div>
-  );
-}
-
-function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className={`text-right text-sm font-semibold ${mono ? "font-mono" : ""}`}>{value}</dd>
-    </div>
   );
 }

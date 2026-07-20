@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ProductsRouteImport } from './routes/products'
+import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as OrderVerificationRouteImport } from './routes/order-verification'
 import { Route as OrderTrackingRouteImport } from './routes/order-tracking'
 import { Route as OrderFailedRouteImport } from './routes/order-failed'
@@ -25,6 +26,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as ProductsIdRouteImport } from './routes/products.$id'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminQuotesRouteImport } from './routes/admin.quotes'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminCouponsRouteImport } from './routes/admin.coupons'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
@@ -46,6 +48,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const ProductsRoute = ProductsRouteImport.update({
   id: '/products',
   path: '/products',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrdersRoute = OrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrderVerificationRoute = OrderVerificationRouteImport.update({
@@ -116,6 +123,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminQuotesRoute = AdminQuotesRouteImport.update({
+  id: '/quotes',
+  path: '/quotes',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminOrdersRoute = AdminOrdersRouteImport.update({
@@ -191,11 +203,13 @@ export interface FileRoutesByFullPath {
   '/order-failed': typeof OrderFailedRoute
   '/order-tracking': typeof OrderTrackingRoute
   '/order-verification': typeof OrderVerificationRoute
+  '/orders': typeof OrdersRoute
   '/products': typeof ProductsRouteWithChildren
   '/profile': typeof ProfileRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/orders': typeof AdminOrdersRoute
+  '/admin/quotes': typeof AdminQuotesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/products/$id': typeof ProductsIdRoute
@@ -220,10 +234,12 @@ export interface FileRoutesByTo {
   '/order-failed': typeof OrderFailedRoute
   '/order-tracking': typeof OrderTrackingRoute
   '/order-verification': typeof OrderVerificationRoute
+  '/orders': typeof OrdersRoute
   '/profile': typeof ProfileRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/orders': typeof AdminOrdersRoute
+  '/admin/quotes': typeof AdminQuotesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/products/$id': typeof ProductsIdRoute
@@ -250,11 +266,13 @@ export interface FileRoutesById {
   '/order-failed': typeof OrderFailedRoute
   '/order-tracking': typeof OrderTrackingRoute
   '/order-verification': typeof OrderVerificationRoute
+  '/orders': typeof OrdersRoute
   '/products': typeof ProductsRouteWithChildren
   '/profile': typeof ProfileRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/coupons': typeof AdminCouponsRoute
   '/admin/orders': typeof AdminOrdersRoute
+  '/admin/quotes': typeof AdminQuotesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/products/$id': typeof ProductsIdRoute
@@ -282,11 +300,13 @@ export interface FileRouteTypes {
     | '/order-failed'
     | '/order-tracking'
     | '/order-verification'
+    | '/orders'
     | '/products'
     | '/profile'
     | '/admin/analytics'
     | '/admin/coupons'
     | '/admin/orders'
+    | '/admin/quotes'
     | '/admin/settings'
     | '/admin/users'
     | '/products/$id'
@@ -311,10 +331,12 @@ export interface FileRouteTypes {
     | '/order-failed'
     | '/order-tracking'
     | '/order-verification'
+    | '/orders'
     | '/profile'
     | '/admin/analytics'
     | '/admin/coupons'
     | '/admin/orders'
+    | '/admin/quotes'
     | '/admin/settings'
     | '/admin/users'
     | '/products/$id'
@@ -340,11 +362,13 @@ export interface FileRouteTypes {
     | '/order-failed'
     | '/order-tracking'
     | '/order-verification'
+    | '/orders'
     | '/products'
     | '/profile'
     | '/admin/analytics'
     | '/admin/coupons'
     | '/admin/orders'
+    | '/admin/quotes'
     | '/admin/settings'
     | '/admin/users'
     | '/products/$id'
@@ -371,6 +395,7 @@ export interface RootRouteChildren {
   OrderFailedRoute: typeof OrderFailedRoute
   OrderTrackingRoute: typeof OrderTrackingRoute
   OrderVerificationRoute: typeof OrderVerificationRoute
+  OrdersRoute: typeof OrdersRoute
   ProductsRoute: typeof ProductsRouteWithChildren
   ProfileRoute: typeof ProfileRoute
 }
@@ -389,6 +414,13 @@ declare module '@tanstack/react-router' {
       path: '/products'
       fullPath: '/products'
       preLoaderRoute: typeof ProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/orders': {
+      id: '/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof OrdersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/order-verification': {
@@ -489,6 +521,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/quotes': {
+      id: '/admin/quotes'
+      path: '/quotes'
+      fullPath: '/admin/quotes'
+      preLoaderRoute: typeof AdminQuotesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/orders': {
       id: '/admin/orders'
       path: '/orders'
@@ -580,6 +619,7 @@ interface AdminRouteChildren {
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminCouponsRoute: typeof AdminCouponsRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
+  AdminQuotesRoute: typeof AdminQuotesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -598,6 +638,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminCouponsRoute: AdminCouponsRoute,
   AdminOrdersRoute: AdminOrdersRoute,
+  AdminQuotesRoute: AdminQuotesRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
@@ -638,6 +679,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrderFailedRoute: OrderFailedRoute,
   OrderTrackingRoute: OrderTrackingRoute,
   OrderVerificationRoute: OrderVerificationRoute,
+  OrdersRoute: OrdersRoute,
   ProductsRoute: ProductsRouteWithChildren,
   ProfileRoute: ProfileRoute,
 }

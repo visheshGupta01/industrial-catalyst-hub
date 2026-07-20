@@ -19,3 +19,26 @@ export const createQuoteRequest = async (payload: CreateQuotePayload) => {
   });
   return data;
 };
+
+export const getAdminQuotes = async () => {
+  const data = await apiFetch<{ success: boolean; quotes: QuoteItem[] }>("/quote/", {
+    method: "GET",
+  });
+  return data.quotes;
+};
+
+export const updateQuoteStatus = async ({
+  id,
+  status,
+  adminNotes,
+}: {
+  id: string;
+  status: string;
+  adminNotes?: string;
+}) => {
+  const data = await apiFetch<{ success: boolean; message: string }>(`/quote/${id}/status`,{
+    method: "PATCH",
+    body: { status, adminNotes },
+  } as any);
+  return data;
+};

@@ -1,147 +1,224 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Download, Eye } from "lucide-react";
+import { useState } from "react";
+import {
+  Truck,
+  PackageCheck,
+  ExternalLink,
+  Loader2,
+  Calendar,
+  Search,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { StatusBadge } from "./admin.index";
-import { useAdminOrders, useUpdateOrderStatus } from "@/hooks/useAdminOrders";
 import { formatINR } from "@/lib/format";
-import { useNavigate } from "@tanstack/react-router";
+import { useAdminOrders } from "@/hooks/useAdminOrders";
+import { useCreateShipment, useRequestPickup } from "@/hooks/useShipment";
+
 export const Route = createFileRoute("/admin/orders")({
-  head: () => ({ meta: [{ title: "Orders — Admin" }] }),
-  component: OrdersAdmin,
+  head: () => ({ meta: [{ title: "Admin Order Logistics — FerroCore" }] }),
+  component: AdminOrdersPage,
 });
 
-function OrdersAdmin() {
+function AdminOrdersPage() {
+  const { data: orders, isLoading, isError } = useAdminOrders();
+  const createShipment = useCreateShipment();
+  const requestPickup = useRequestPickup();
 
-  const { data: orders = [], isLoading } = useAdminOrders();
-  const navigate = useNavigate();
-
-  const updateStatus = useUpdateOrderStatus();
+  const [search, setSearch] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   if (isLoading) {
-    return <AdminLayout title="Orders">Loading...</AdminLayout>;
-  }
-  return (
-    <AdminLayout
-      title="Orders"
-      subtitle={`${orders.length} orders in the last 30 days`}
-      actions={
-        <button className="inline-flex items-center gap-1.5 bg-primary px-3 py-2 text-xs font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90">
-          <Download className="h-3.5 w-3.5" /> Export CSV
-        </button>
-      }
-    >
-      <div className="mb-5 grid gap-3 md:grid-cols-4">
-        {[
-          {
-            label: "Pending",
-            value: orders.filter((o) => o.orderStatus === "Pending").length,
-            color: "text-muted-foreground",
-          },
-          {
-            label: "Processing",
-            value: orders.filter((o) => o.orderStatus === "Processing").length,
-            color: "text-primary",
-          },
-          {
-            label: "Shipped",
-            value: orders.filter((o) => o.orderStatus === "Shipped").length,
-            color: "text-accent",
-          },
-          {
-            label: "Delivered",
-            value: orders.filter((o) => o.orderStatus === "Delivered").length,
-            color: "text-emerald-600",
-          },
-        ].map((c) => (
-          <div key={c.label} className="border border-border bg-card p-4">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {c.label}
-            </div>
-            <div className={`mt-2 text-2xl font-bold ${c.color}`}>{c.value}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="border border-border bg-card">
-        <div className="flex flex-wrap items-center gap-3 border-b border-border p-4">
-          <input
-            placeholder="Search by order ID or customer…"
-            className="flex-1 min-w-[200px] border border-input bg-surface px-3 py-2 text-sm focus:border-primary focus:outline-none"
-          />
-          <select className="border border-input bg-surface px-3 py-2 text-sm">
-            <option>All Statuses</option>
-            <option>Pending</option>
-            <option>Processing</option>
-            <option>Shipped</option>
-            <option>Delivered</option>
-          </select>
-          <select className="border border-input bg-surface px-3 py-2 text-sm">
-            <option>Last 30 days</option>
-            <option>This quarter</option>
-            <option>This year</option>
-          </select>
+    return (
+      <AdminLayout>
+        <div className="flex h-64 items-center justify-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          Loading orders and logistics manifests...
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-surface text-[11px] uppercase tracking-wider text-muted-foreground">
-                <th className="px-5 py-3 text-left font-semibold">Order ID</th>
-                <th className="px-5 py-3 text-left font-semibold">Customer</th>
-                <th className="px-5 py-3 text-left font-semibold">Date</th>
-                <th className="px-5 py-3 text-left font-semibold">Amount</th>
-                <th className="px-5 py-3 text-left font-semibold">Status</th>
-                <th className="px-5 py-3 text-right font-semibold">Actions</th>
+      </AdminLayout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <AdminLayout>
+        <div className="p-8 text-center text-destructive">
+          Failed to load administrative order list. Please refresh the page.
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  const filteredOrders = (orders ?? []).filter((o: any) => {
+    const matchesSearch =
+      o.orderNumber?.toLowerCase().includes(search.toLowerCase()) ||
+      o.user?.email?.toLowerCase().includes(search.toLowerCase()) ||
+      o.shippingAddress?.pincode?.includes(search);
+
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "paid" && o.payment?.status === "Paid") ||
+      (filterStatus === "unshipped" && !o.shipping?.shipmentId) ||
+      (filterStatus === "shipped" && o.shipping?.shipmentId);
+
+    return matchesSearch && matchesStatus;
+  });
+
+  return (
+    <AdminLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Order Fulfillment & Logistics</h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Dispatch paid orders to Shiprocket, generate courier AWBs, and schedule carrier pickups.
+          </p>
+        </div>
+
+        {/* Filter Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-4 border border-border bg-card p-4">
+          <div className="relative flex-1 min-w-[240px]">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search by Order #, Email, or PIN Code..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full border border-input bg-background py-2 pl-9 pr-3 text-xs focus:border-primary focus:outline-none"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            {["all", "paid", "unshipped", "shipped"].map((st) => (
+              <button
+                key={st}
+                onClick={() => setFilterStatus(st)}
+                className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                  filterStatus === st
+                    ? "bg-primary text-primary-foreground"
+                    : "border border-border bg-background hover:bg-surface"
+                }`}
+              >
+                {st}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Orders Table */}
+        <div className="border border-border bg-card overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="border-b border-border bg-surface text-[10px] uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3">Order Ref</th>
+                <th className="px-4 py-3">Customer</th>
+                <th className="px-4 py-3">Value</th>
+                <th className="px-4 py-3">Payment</th>
+                <th className="px-4 py-3">Shipping PIN</th>
+                <th className="px-4 py-3">AWB / Courier</th>
+                <th className="px-4 py-3 text-right">Logistics Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {orders.map((o) => (
-                <tr key={o._id} className="border-b border-border last:border-0 hover:bg-surface">
-                  <td className="px-5 py-3 font-mono text-xs">{o.orderNumber}</td>
-                  <td className="px-5 py-3 font-semibold">
-                    {typeof o.user === "string" ? "-" : o.user.name}
-                  </td>{" "}
-                  <td className="px-5 py-3 text-muted-foreground">
-                    {new Date(o.createdAt).toLocaleDateString()}
-                  </td>{" "}
-                  <td className="px-5 py-3 font-semibold">{formatINR(o.totalAmount)}</td>{" "}
-                  <td className="px-5 py-3">
-                    <select
-                      value={o.orderStatus}
-                      onChange={(e) =>
-                        updateStatus.mutate({
-                          id: o._id,
-                          status: e.target.value as
-                            | "Pending"
-                            | "Processing"
-                            | "Shipped"
-                            | "Delivered"
-                            | "Cancelled",
-                        })
-                      }
-                    >
-                      <option>Pending</option>
-                      <option>Processing</option>
-                      <option>Shipped</option>
-                      <option>Delivered</option>
-                      <option>Cancelled</option>
-                    </select>{" "}
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex justify-end">
-                      <button
-                        onClick={() =>
-                          navigate({
-                            to: "/admin/orders/$id",
-                            params: { id: o._id },
-                          })
-                        }
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
+            <tbody className="divide-y divide-border">
+              {filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                    No order records found matching criteria.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredOrders.map((order: any) => {
+                  const isPaid = order.payment?.status === "Paid";
+                  const hasShipment = !!order.shipping?.shipmentId;
+                  const hasAwb = !!order.shipping?.awbCode;
+
+                  return (
+                    <tr key={order._id} className="hover:bg-surface/50 transition-colors">
+                      <td className="px-4 py-3 font-mono font-bold">{order.orderNumber}</td>
+                      <td className="px-4 py-3">
+                        <div className="font-semibold">{order.user?.name || "Customer"}</div>
+                        <div className="text-[10px] text-muted-foreground">{order.user?.email}</div>
+                      </td>
+                      <td className="px-4 py-3 font-bold text-primary">
+                        {formatINR(order.pricing?.total)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-block px-2 py-0.5 font-bold uppercase tracking-wider text-[9px] border ${
+                            isPaid
+                              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                              : "bg-amber-50 border-amber-200 text-amber-700"
+                          }`}
+                        >
+                          {order.payment?.status || "Pending"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-mono">
+                        {order.shippingAddress?.city}, {order.shippingAddress?.pincode}
+                      </td>
+                      <td className="px-4 py-3">
+                        {hasAwb ? (
+                          <div>
+                            <span className="font-mono font-bold text-foreground block">
+                              {order.shipping.awbCode}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {order.shipping.courierName || "Carrier Assigned"}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground italic">
+                            Unassigned
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {/* 1. If Paid & No Shipment Created -> Push to Shiprocket */}
+                          {isPaid && !hasShipment && (
+                            <button
+                              disabled={createShipment.isPending}
+                              onClick={() => createShipment.mutate(order._id)}
+                              className="inline-flex items-center gap-1 bg-primary px-3 py-1.5 font-semibold uppercase tracking-wider text-primary-foreground text-[10px] hover:bg-primary/90 disabled:opacity-50"
+                            >
+                              {createShipment.isPending && (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              )}
+                              <Truck className="h-3 w-3" /> Push to Shiprocket
+                            </button>
+                          )}
+
+                          {/* 2. If Shipment Exists -> Request Pickup */}
+                          {hasShipment && (
+                            <button
+                              disabled={requestPickup.isPending}
+                              onClick={() => requestPickup.mutate(order._id)}
+                              className="inline-flex items-center gap-1 border border-primary text-primary px-3 py-1.5 font-semibold uppercase tracking-wider text-[10px] hover:bg-primary hover:text-primary-foreground disabled:opacity-50"
+                            >
+                              {requestPickup.isPending && (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              )}
+                              <PackageCheck className="h-3 w-3" /> Schedule Pickup
+                            </button>
+                          )}
+
+                          {/* 3. External Tracking Link */}
+                          {order.shipping?.trackingUrl && (
+                            <a
+                              href={order.shipping.trackingUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 text-muted-foreground hover:text-primary transition-colors border border-border"
+                              title="Open Carrier Tracker"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

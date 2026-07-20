@@ -10,7 +10,6 @@ interface OrdersResponse {
   success: boolean;
   orders: Order[];
 }
-
 export const orderApi = {
   async getMyOrders(): Promise<Order[]> {
     const res = await apiFetch<OrdersResponse>("/orders");
