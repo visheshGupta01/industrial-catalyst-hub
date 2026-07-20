@@ -36,9 +36,16 @@ export const updateQuoteStatus = async ({
   status: string;
   adminNotes?: string;
 }) => {
-  const data = await apiFetch<{ success: boolean; message: string }>(`/quote/${id}/status`,{
+  const data = await apiFetch<{ success: boolean; message: string }>(`/quote/${id}/status`, {
     method: "PATCH",
     body: { status, adminNotes },
   } as any);
   return data;
+};
+
+export const getMyQuotes = async () => {
+  const data  = await apiFetch<{ success: boolean; quotes: QuoteItem[] }>("/quote/my-quotes", {
+    method: "GET",
+  });
+  return data.quotes;
 };

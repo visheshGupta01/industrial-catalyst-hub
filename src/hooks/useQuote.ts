@@ -1,5 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createQuoteRequest, CreateQuotePayload, getAdminQuotes, updateQuoteStatus } from "@/lib/api/quote";
+import {
+  createQuoteRequest,
+  CreateQuotePayload,
+  getAdminQuotes,
+  updateQuoteStatus,
+  getMyQuotes,
+} from "@/lib/api/quote";
 import { toast } from "sonner";
 
 export function useCreateQuote() {
@@ -37,5 +43,12 @@ export function useUpdateQuoteStatus() {
     onError: (error: any) => {
       toast.error(error.message || "Failed to update quote status");
     },
+  });
+}
+
+export function useMyQuotes() {
+  return useQuery({
+    queryKey: ["my-quotes"],
+    queryFn: getMyQuotes,
   });
 }

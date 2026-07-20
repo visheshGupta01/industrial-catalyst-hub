@@ -5,7 +5,6 @@ import {
   Building2,
   Mail,
   Phone,
-  MapPin,
   Package,
   Heart,
   LogOut,
@@ -14,13 +13,19 @@ import {
   ShieldCheck,
   Menu,
   X,
+  Loader2,
+  ExternalLink,
+  Layers,
+  ArrowRight,
 } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
-import { orders as fallbackOrders } from "@/lib/mock-data";
-import { listOrders } from "@/lib/api/orders";
 import { formatINR } from "@/lib/format";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useMyOrders } from "@/hooks/useOrders";
+import { useQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api/client";
+import { useMyQuotes } from "@/hooks/useQuote";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -36,44 +41,37 @@ export const Route = createFileRoute("/profile")({
 });
 
 function ProfilePage() {
-  const user = useAuth();
+  const { data: user, isLoading: authLoading } = useAuth();
+  const { data: orders = [], isLoading: ordersLoading } = useMyOrders();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"profile" | "orders" | "wishlist" | "addresses">("profile");
+
+  const [tab, setTab] = useState<"profile" | "orders" | "quotes" | "wishlist">("profile");
   const [edit, setEdit] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
-  const [orders, setOrders] = useState(fallbackOrders);
+
+  // Fetch Customer's Active RFQs/Quotes
+  const { data: quotes, isLoading: quotesLoading } = useMyQuotes();
 
   useEffect(() => {
-    if (!user) return;
-    listOrders()
-      .then((list) => {
-        if (Array.isArray(list) && list.length) setOrders(list as typeof fallbackOrders);
-      })
-      .catch(() => {});
-  }, [user]);
+    if (!authLoading && !user) {
+      navigate({ to: "/auth", replace: true });
+    }
+  }, [user, authLoading, navigate]);
 
-  useEffect(() => {
-    if (user === null) navigate({ to: "/auth" });
-  }, [user, navigate]);
+  if (authLoading) {
+    return (
+      <SiteLayout>
+        <div className="flex h-64 items-center justify-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          Loading your profile...
+        </div>
+      </SiteLayout>
+    );
+  }
 
   if (!user) return null;
 
-  const onSave = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    authStore.update({
-      name: String(fd.get("name") || user.name),
-      company: String(fd.get("company") || user.company),
-      phone: String(fd.get("phone") || user.phone),
-      role: String(fd.get("role") || user.role),
-      gstin: String(fd.get("gstin") || user.gstin),
-      address: String(fd.get("address") || user.address),
-    });
-    setEdit(false);
-    toast.success("Profile updated");
-  };
-
-  const initials = user.name
+  const initials = (user.name || "User")
     .split(" ")
     .map((s) => s[0])
     .slice(0, 2)
@@ -98,9 +96,11 @@ function ProfilePage() {
             <div>
               <h1 className="text-2xl font-bold md:text-3xl">{user.name}</h1>
               <div className="mt-1 flex flex-wrap items-center gap-3 text-sm opacity-80">
-                <span className="flex items-center gap-1.5">
-                  <Building2 className="h-3.5 w-3.5" /> {user.company}
-                </span>
+                {/* {user.companyName && (
+                  <span className="flex items-center gap-1.5">
+                    <Building2 className="h-3.5 w-3.5" /> {user.companyName}
+                  </span>
+                )} */}
                 <span className="flex items-center gap-1.5">
                   <Mail className="h-3.5 w-3.5" /> {user.email}
                 </span>
@@ -108,7 +108,7 @@ function ProfilePage() {
             </div>
             <div className="ml-auto inline-flex items-center gap-2 border border-white/20 bg-white/5 px-3 py-1.5 text-xs">
               <ShieldCheck className="h-4 w-4 text-accent" />
-              <span>Verified business account</span>
+              <span>Verified Account</span>
             </div>
           </div>
         </div>
@@ -130,7 +130,9 @@ function ProfilePage() {
             />
           )}
           <aside
-            className={`fixed left-0 top-0 z-50 h-full w-[min(86vw,320px)] bg-background p-5 premium-shadow transition-transform duration-300 lg:static lg:z-auto lg:h-auto lg:w-auto lg:translate-x-0 lg:bg-transparent lg:p-0 lg:shadow-none ${mobileNav ? "translate-x-0" : "-translate-x-full"}`}
+            className={`fixed left-0 top-0 z-50 h-full w-[min(86vw,320px)] bg-background p-5 premium-shadow transition-transform duration-300 lg:static lg:z-auto lg:h-auto lg:w-auto lg:translate-x-0 lg:bg-transparent lg:p-0 lg:shadow-none ${
+              mobileNav ? "translate-x-0" : "-translate-x-full"
+            }`}
           >
             <div className="mb-5 flex items-center justify-between lg:hidden">
               <div>
@@ -149,8 +151,8 @@ function ProfilePage() {
               {[
                 { id: "profile", label: "Profile", icon: User },
                 { id: "orders", label: "Orders", icon: Package },
+                { id: "quotes", label: "Quotations / RFQs", icon: FileText },
                 { id: "wishlist", label: "Wishlist", icon: Heart },
-                { id: "addresses", label: "Addresses", icon: MapPin },
               ].map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
@@ -169,8 +171,7 @@ function ProfilePage() {
               ))}
               <button
                 onClick={() => {
-                  authStore.logout();
-                  toast.success("Signed out");
+                  toast.success("Signed out successfully");
                   navigate({ to: "/auth" });
                 }}
                 className="flex w-full items-center gap-3 border-l-2 border-transparent border-t border-border px-4 py-3 text-left text-sm text-destructive hover:bg-surface"
@@ -181,6 +182,7 @@ function ProfilePage() {
           </aside>
 
           <div className="animate-fade-in" key={tab}>
+            {/* PROFILE TAB */}
             {tab === "profile" && (
               <div className="border border-border bg-card">
                 <header className="flex items-center justify-between border-b border-border px-6 py-4">
@@ -188,125 +190,168 @@ function ProfilePage() {
                     <div className="eyebrow">Account details</div>
                     <h2 className="mt-1 text-lg font-semibold">Profile information</h2>
                   </div>
-                  <button
-                    onClick={() => setEdit((v) => !v)}
-                    className="inline-flex items-center gap-1.5 border border-border px-3 py-1.5 text-xs font-semibold uppercase tracking-wider hover:border-primary hover:text-primary"
-                  >
-                    <Pencil className="h-3.5 w-3.5" /> {edit ? "Cancel" : "Edit"}
-                  </button>
                 </header>
 
-                {edit ? (
-                  <form onSubmit={onSave} className="grid gap-4 p-6 md:grid-cols-2">
-                    <EditField name="name" label="Full name" defaultValue={user.name} />
-                    <EditField name="company" label="Company" defaultValue={user.company} />
-                    <EditField name="role" label="Role" defaultValue={user.role} />
-                    <EditField name="phone" label="Phone" defaultValue={user.phone} />
-                    <EditField name="gstin" label="GSTIN" defaultValue={user.gstin} />
-                    <EditField
-                      name="address"
-                      label="Shipping address"
-                      defaultValue={user.address}
-                      full
-                    />
-                    <div className="md:col-span-2 flex gap-3">
-                      <button
-                        type="submit"
-                        className="bg-primary px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90"
-                      >
-                        Save changes
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEdit(false)}
-                        className="border border-border px-5 py-2.5 text-xs font-semibold uppercase tracking-wider hover:border-primary"
-                      >
-                        Cancel
-                      </button>
+                <dl className="grid gap-px bg-border md:grid-cols-2">
+                  {[
+                    { label: "Full name", value: user.name, icon: User },
+                    { label: "Email", value: user.email, icon: Mail },
+                    { label: "Phone", value: user.phone || "Not Provided", icon: Phone },
+                    { label: "Role", value: user.role || "Customer", icon: ShieldCheck },
+                  ].map(({ label, value, icon: Icon }) => (
+                    <div key={label} className="bg-card p-5">
+                      <dt className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        <Icon className="h-3.5 w-3.5" /> {label}
+                      </dt>
+                      <dd className="mt-1.5 text-sm font-medium text-foreground">{value}</dd>
                     </div>
-                  </form>
-                ) : (
-                  <dl className="grid gap-px bg-border md:grid-cols-2">
-                    {[
-                      { label: "Full name", value: user.name, icon: User },
-                      { label: "Company", value: user.company, icon: Building2 },
-                      { label: "Email", value: user.email, icon: Mail },
-                      { label: "Phone", value: user.phone, icon: Phone },
-                      { label: "Role", value: user.role, icon: FileText },
-                      { label: "GSTIN", value: user.gstin, icon: ShieldCheck },
-                      { label: "Shipping address", value: user.address, icon: MapPin, full: true },
-                    ].map(({ label, value, icon: Icon, full }) => (
-                      <div key={label} className={`bg-card p-5 ${full ? "md:col-span-2" : ""}`}>
-                        <dt className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          <Icon className="h-3.5 w-3.5" /> {label}
-                        </dt>
-                        <dd className="mt-1.5 text-sm font-medium text-foreground">{value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                )}
+                  ))}
+                </dl>
               </div>
             )}
 
+            {/* ORDERS TAB */}
             {tab === "orders" && (
               <div className="border border-border bg-card">
                 <header className="border-b border-border px-6 py-4">
                   <div className="eyebrow">Order history</div>
                   <h2 className="mt-1 text-lg font-semibold">Your purchase orders</h2>
                 </header>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-surface text-[11px] uppercase tracking-wider text-muted-foreground">
-                      <tr>
-                        <th className="px-5 py-3 text-left">Order</th>
-                        <th className="px-5 py-3 text-left">Date</th>
-                        <th className="px-5 py-3 text-left">Status</th>
-                        <th className="px-5 py-3 text-right">Amount</th>
-                        <th className="px-5 py-3"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {orders.map((o) => (
-                        <tr
-                          key={o.id}
-                          className="border-t border-border transition-colors duration-200 hover:bg-surface"
-                        >
-                          <td className="px-5 py-3 font-mono text-xs">{o.id}</td>
-                          <td className="px-5 py-3 text-muted-foreground">{o.date}</td>
-                          <td className="px-5 py-3">
-                            <span
-                              className={`px-2 py-0.5 text-[11px] font-semibold ${
-                                o.status === "Delivered"
-                                  ? "bg-emerald-50 text-emerald-700"
-                                  : o.status === "Shipped"
-                                    ? "bg-blue-50 text-blue-700"
-                                    : o.status === "Processing"
-                                      ? "bg-amber-50 text-amber-700"
-                                      : "bg-muted text-muted-foreground"
-                              }`}
-                            >
-                              {o.status}
-                            </span>
-                          </td>
-                          <td className="px-5 py-3 text-right font-semibold">
-                            {formatINR(o.amount)}
-                          </td>
-                          <td className="px-5 py-3 text-right">
-                            <Link
-                              to="/order-tracking"
-                              className="text-xs font-semibold text-primary hover:underline"
-                            >
-                              Track →
-                            </Link>
-                          </td>
+
+                {ordersLoading ? (
+                  <div className="p-8 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" /> Loading orders...
+                  </div>
+                ) : orders.length === 0 ? (
+                  <div className="p-12 text-center text-sm text-muted-foreground">
+                    No order records found.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-surface text-[11px] uppercase tracking-wider text-muted-foreground">
+                        <tr>
+                          <th className="px-5 py-3 text-left">Order #</th>
+                          <th className="px-5 py-3 text-left">Date</th>
+                          <th className="px-5 py-3 text-left">Payment</th>
+                          <th className="px-5 py-3 text-left">Shipping</th>
+                          <th className="px-5 py-3 text-right">Amount</th>
+                          <th className="px-5 py-3 text-right">Action</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {orders.map((o: any) => (
+                          <tr key={o._id} className="hover:bg-surface/50 transition-colors">
+                            <td className="px-5 py-3 font-mono text-xs font-bold">
+                              {o.orderNumber}
+                            </td>
+                            <td className="px-5 py-3 text-xs text-muted-foreground">
+                              {new Date(o.createdAt).toLocaleDateString("en-IN")}
+                            </td>
+                            <td className="px-5 py-3">
+                              <span
+                                className={`px-2 py-0.5 text-[10px] font-semibold border ${
+                                  o.payment?.status === "Paid"
+                                    ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                                    : "bg-amber-50 border-amber-200 text-amber-700"
+                                }`}
+                              >
+                                {o.payment?.status || "Pending"}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3">
+                              <span className="bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 text-[10px] font-semibold">
+                                {o.shipping?.status || "Processing"}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3 text-right font-bold text-primary">
+                              {formatINR(o.pricing?.total)}
+                            </td>
+                            <td className="px-5 py-3 text-right">
+                              <Link
+                                to="/order-tracking"
+                                search={{ orderId: o._id }}
+                                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                              >
+                                Track <ArrowRight className="h-3 w-3" />
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 
+            {/* QUOTATIONS / RFQs TAB */}
+            {tab === "quotes" && (
+              <div className="border border-border bg-card">
+                <header className="border-b border-border px-6 py-4">
+                  <div className="eyebrow">B2B Procurement</div>
+                  <h2 className="mt-1 text-lg font-semibold">Submitted Quotation Requests</h2>
+                </header>
+
+                {quotesLoading ? (
+                  <div className="p-8 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" /> Loading quotations...
+                  </div>
+                ) : quotes.length === 0 ? (
+                  <div className="p-12 text-center text-sm text-muted-foreground">
+                    You haven't submitted any quote requests yet.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-surface text-[11px] uppercase tracking-wider text-muted-foreground">
+                        <tr>
+                          <th className="px-5 py-3 text-left">Type</th>
+                          <th className="px-5 py-3 text-left">Item / SKU</th>
+                          <th className="px-5 py-3 text-center">Qty</th>
+                          <th className="px-5 py-3 text-left">Status</th>
+                          <th className="px-5 py-3 text-right">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {quotes.map((q: any) => (
+                          <tr key={q._id} className="hover:bg-surface/50 transition-colors">
+                            <td className="px-5 py-3">
+                              {q.requirementType === "bulk" ? (
+                                <span className="inline-flex items-center gap-1 text-primary font-bold text-xs">
+                                  <Layers className="h-3.5 w-3.5" /> Bulk RFQ
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-blue-600 font-semibold text-xs">
+                                  <FileText className="h-3.5 w-3.5" /> Quote
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-3">
+                              <div className="font-semibold">{q.product?.name || "Equipment"}</div>
+                              <div className="text-[10px] font-mono text-muted-foreground">
+                                {q.product?.sku}
+                              </div>
+                            </td>
+                            <td className="px-5 py-3 text-center font-bold">{q.quantity || 1}</td>
+                            <td className="px-5 py-3">
+                              <span className="bg-amber-50 border border-amber-200 text-amber-700 px-2 py-0.5 text-[10px] font-bold uppercase">
+                                {q.status || "Pending"}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3 text-right text-xs text-muted-foreground">
+                              {new Date(q.createdAt).toLocaleDateString("en-IN")}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* WISHLIST TAB */}
             {tab === "wishlist" && (
               <div className="border border-dashed border-border bg-surface p-16 text-center">
                 <Heart className="mx-auto h-8 w-8 text-muted-foreground" />
@@ -322,67 +367,9 @@ function ProfilePage() {
                 </Link>
               </div>
             )}
-
-            {tab === "addresses" && (
-              <div className="border border-border bg-card p-6">
-                <div className="eyebrow">Saved addresses</div>
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  {[
-                    { tag: "Headquarters", line: user.address },
-                    {
-                      tag: "Plant 2 — Chakan",
-                      line: "Survey 218, Chakan Industrial Belt, Pune 410501",
-                    },
-                  ].map((a) => (
-                    <div
-                      key={a.tag}
-                      className="border border-border bg-surface p-5 transition-all duration-300 hover:-translate-y-1 hover:border-primary hover:premium-shadow"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="bg-primary/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
-                          {a.tag}
-                        </span>
-                        <button className="text-xs text-muted-foreground hover:text-primary">
-                          Edit
-                        </button>
-                      </div>
-                      <p className="mt-3 text-sm">{a.line}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {user.company} · GSTIN {user.gstin}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </section>
     </SiteLayout>
-  );
-}
-
-function EditField({
-  name,
-  label,
-  defaultValue,
-  full,
-}: {
-  name: string;
-  label: string;
-  defaultValue: string;
-  full?: boolean;
-}) {
-  return (
-    <label className={`block ${full ? "md:col-span-2" : ""}`}>
-      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {label}
-      </span>
-      <input
-        name={name}
-        defaultValue={defaultValue}
-        className="mt-1.5 w-full border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
-      />
-    </label>
   );
 }

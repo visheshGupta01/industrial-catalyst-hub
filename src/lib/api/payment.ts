@@ -45,7 +45,7 @@ export const paymentApi = {
   },
 
   async getPaymentStatus(orderId: string) {
-    const { data } = await apiFetch(`/payment/status/${orderId}`);
+    const data = await apiFetch(`/payment/status/${orderId}`);
     return data;
   },
 };
