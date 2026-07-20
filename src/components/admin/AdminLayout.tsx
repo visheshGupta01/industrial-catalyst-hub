@@ -12,8 +12,10 @@ import {
   FolderTree,
   Layers,
   Quote,
+  Menu,
+  X,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 const NAV = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
