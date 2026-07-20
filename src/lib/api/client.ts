@@ -1,12 +1,12 @@
 // Lightweight typed REST client for the user's backend.
-// Base URL comes from VITE_API_URL (defaults to http://localhost:3000).
+// Base URL comes from BACKEND_URL
 // Bearer token is read from localStorage on every request.
 
 import { tokenStore } from "../store/auth";
 
 export const API_BASE: string =
   (typeof import.meta !== "undefined" &&
-    (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL) ||
+    (import.meta as { env?: { BACKEND_URL?: string } }).env?.BACKEND_URL) ||
   "http://127.0.0.1:3000/api";
 
 
