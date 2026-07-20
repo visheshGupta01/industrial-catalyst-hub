@@ -6,7 +6,7 @@ import { tokenStore } from "../store/auth";
 
 export const API_BASE: string =
   (typeof import.meta !== "undefined" &&
-    (import.meta as { env?: { BACKEND_URL?: string } }).env?.BACKEND_URL) ||
+    (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL) ||
   "http://127.0.0.1:3000/api";
 
 
