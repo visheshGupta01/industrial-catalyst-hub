@@ -1,426 +1,523 @@
-import { useMemo, useState, type FormEvent } from "react";
-import { Loader2, Plus, X } from "lucide-react";
-import type { Product } from "@/types";
-import {
-  useCategories,
-  useCreateCategory,
-  useSubCategories,
-} from "@/hooks/useCategory";
-import { CategoryForm } from "@/components/admin/CategoryForm";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { Plus, Trash2, Upload, Loader2, Package, Truck, Layers, FolderPlus } from "lucide-react";
+import { Product } from "@/types";
+import { useCategories, useSubCategories } from "@/hooks/useCategory";
 
-export type ProductFormValues = {
-  name: string;
-  description: string;
-  price: string;
-  discountPrice: string;
-  stock: string;
-  sku: string;
-  brand: string;
-  category: string;
-  subCategory: string;
-  tags: string;
-  isFeatured: boolean;
-  isActive: boolean;
-  specifications: { key: string; value: string }[];
-};
-
-function toInitial(p?: Product | null): ProductFormValues {
-  return {
-    name: p?.name ?? "",
-    description: p?.description ?? "",
-    price: p?.price != null ? String(p.price) : "",
-    discountPrice: p?.discountPrice != null ? String(p.discountPrice) : "",
-    stock: p?.stock != null ? String(p.stock) : "0",
-    sku: p?.sku ?? "",
-    brand: p?.brand ?? "",
-    category: (p?.category as any)?._id ?? (p?.category as any) ?? "",
-    subCategory: (p?.subCategory as any)?._id ?? (p?.subCategory as any) ?? "",
-    tags: (p?.tags ?? []).join(", "),
-    isFeatured: p?.isFeatured ?? false,
-    isActive: p?.isActive ?? true,
-    specifications: p?.specifications
-      ? Object.entries(p.specifications).map(([key, value]) => ({ key, value: String(value) }))
-      : [],
-  };
+interface ProductFormProps {
+  initialData?: Product;
+  onSubmit: (formData: FormData) => void;
+  isPending: boolean;
+  submitLabel: string;
 }
 
-export function ProductForm({
-  initial,
-  submitting,
-  submitLabel,
-  onSubmit,
-  onCancel,
-}: {
-  initial?: Product | null;
-  submitting?: boolean;
-  submitLabel: string;
-  onSubmit: (fd: FormData) => void | Promise<void>;
-  onCancel?: () => void;
-}) {
-  const [values, setValues] = useState<ProductFormValues>(() => toInitial(initial));
-  const [files, setFiles] = useState<File[]>([]);
-  const [catModalOpen, setCatModalOpen] = useState(false);
+export function ProductForm({ initialData, onSubmit, isPending, submitLabel }: ProductFormProps) {
   const { data: categories = [] } = useCategories();
-  const { data: subCategories = [] } = useSubCategories(values.category || undefined);
-  const createCategory = useCreateCategory();
+  const { data: subCategories = [] } = useSubCategories();
 
-  const existingImages = useMemo(() => initial?.images ?? [], [initial]);
+  // Basic Information States
+  const [name, setName] = useState(initialData?.name || "");
+  const [sku, setSku] = useState(initialData?.sku || "");
+  const [description, setDescription] = useState(initialData?.description || "");
+  const [price, setPrice] = useState(initialData?.price?.toString() || "");
+  const [discountPrice, setDiscountPrice] = useState(initialData?.discountPrice?.toString() || "");
+  const [stock, setStock] = useState(initialData?.stock?.toString() || "0");
+  const [category, setCategory] = useState(
+    typeof initialData?.category === "object"
+      ? initialData.category._id
+      : initialData?.category || "",
+  );
+  const [subCategory, setSubCategory] = useState(
+    typeof initialData?.subCategory === "object"
+      ? initialData.subCategory._id
+      : initialData?.subCategory || "",
+  );
+  const [isActive, setIsActive] = useState(initialData?.isActive ?? true);
 
-  const update = <K extends keyof ProductFormValues>(k: K, v: ProductFormValues[K]) =>
-    setValues((s) => ({ ...s, [k]: v }));
+  // Nested Shipping Subdocument States
+  const [isShippable, setIsShippable] = useState(initialData?.shipping?.isShippable ?? true);
+  const [weight, setWeight] = useState(initialData?.shipping?.package?.weight?.toString() || "0.5");
+  const [length, setLength] = useState(initialData?.shipping?.package?.length?.toString() || "10");
+  const [width, setWidth] = useState(initialData?.shipping?.package?.width?.toString() || "10");
+  const [height, setHeight] = useState(initialData?.shipping?.package?.height?.toString() || "10");
+  // Track existing images and removed image IDs
+  const [removedImagePublicIds, setRemovedImagePublicIds] = useState<string[]>([]);
 
-  const setSpec = (i: number, patch: Partial<{ key: string; value: string }>) =>
-    setValues((s) => ({
-      ...s,
-      specifications: s.specifications.map((r, idx) => (idx === i ? { ...r, ...patch } : r)),
-    }));
+  // Dynamic Specifications State Array
+  const [specs, setSpecs] = useState<Array<{ key: string; value: string }>>(() => {
+    if (initialData?.specifications && typeof initialData.specifications === "object") {
+      return Object.entries(initialData.specifications).map(([key, value]) => ({
+        key,
+        value: String(value),
+      }));
+    }
+    return [{ key: "Material", value: "Stainless Steel" }];
+  });
 
-  const addSpec = () =>
-    setValues((s) => ({ ...s, specifications: [...s.specifications, { key: "", value: "" }] }));
+  // Images State
+  const [existingImages, setExistingImages] = useState(initialData?.images || []);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
 
-  const removeSpec = (i: number) =>
-    setValues((s) => ({ ...s, specifications: s.specifications.filter((_, idx) => idx !== i) }));
+  // Filter Subcategories by Selected Parent Category
+  const filteredSubCategories = subCategories.filter(
+    (sc) => (typeof sc.category === "object" ? sc.category._id : sc.category) === category,
+  );
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    const fd = new FormData();
-    fd.append("name", values.name);
-    fd.append("description", values.description);
-    fd.append("price", values.price);
-    if (values.discountPrice) fd.append("discountPrice", values.discountPrice);
-    fd.append("stock", values.stock || "0");
-    if (values.sku) fd.append("sku", values.sku);
-    if (values.brand) fd.append("brand", values.brand);
-    if (values.category) fd.append("category", values.category);
-    if (values.subCategory) fd.append("subCategory", values.subCategory);
-    fd.append("isFeatured", String(values.isFeatured));
-    fd.append("isActive", String(values.isActive));
-
-    const tags = values.tags
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-    fd.append("tags", JSON.stringify(tags));
-
-    const specs = values.specifications.reduce<Record<string, string>>((acc, r) => {
-      if (r.key.trim()) acc[r.key.trim()] = r.value;
-      return acc;
-    }, {});
-    fd.append("specifications", JSON.stringify(specs));
-
-    files.forEach((f) => fd.append("images", f));
-
-    await onSubmit(fd);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setSelectedFiles((prev) => [...prev, ...files]);
+      const newPreviews = files.map((file) => URL.createObjectURL(file));
+      setPreviews((prev) => [...prev, ...newPreviews]);
+    }
   };
 
-  const inputCls =
-    "w-full border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none";
+  const removeSelectedFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = (publicId: string) => {
+    setExistingImages((prev) => prev.filter((img) => img.public_id !== publicId));
+    setRemovedImagePublicIds((prev) => [...prev, publicId]);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("sku", sku);
+    formData.append("description", description);
+    formData.append("price", price);
+    if (discountPrice) formData.append("discountPrice", discountPrice);
+    formData.append("stock", stock);
+    formData.append("category", category);
+    if (subCategory) formData.append("subCategory", subCategory);
+    formData.append("isActive", String(isActive));
+
+    // Nested Shipping Object Serialized for Express Parser
+    formData.append("shipping[isShippable]", String(isShippable));
+    formData.append("shipping[package][weight]", weight);
+    formData.append("shipping[package][length]", length);
+    formData.append("shipping[package][width]", width);
+    formData.append("shipping[package][height]", height);
+    // Pass array of public_ids to delete on backend
+    formData.append("removedImagePublicIds", JSON.stringify(removedImagePublicIds));
+
+    // Append new files
+    selectedFiles.forEach((file) => {
+      formData.append("images", file);
+    });
+
+    // Reconstruct Specifications Key-Value Map
+    const specificationsObj: Record<string, string> = {};
+    specs.forEach((s) => {
+      if (s.key.trim() && s.value.trim()) {
+        specificationsObj[s.key.trim()] = s.value.trim();
+      }
+    });
+    formData.append("specifications", JSON.stringify(specificationsObj));
+
+    // Append Image Files
+    selectedFiles.forEach((file) => {
+      formData.append("images", file);
+    });
+
+    onSubmit(formData);
+  };;
 
   return (
-    <>
-      <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <section className="border border-border bg-card p-5">
-            <h2 className="mb-4 text-sm font-bold uppercase tracking-wider">Basic Info</h2>
-            <div className="grid gap-4">
-              <Field label="Name" required>
-                <input
-                  className={inputCls}
-                  value={values.name}
-                  onChange={(e) => update("name", e.target.value)}
-                  required
-                />
-              </Field>
-              <Field label="Description" required>
-                <textarea
-                  rows={5}
-                  className={inputCls}
-                  value={values.description}
-                  onChange={(e) => update("description", e.target.value)}
-                  required
-                />
-              </Field>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="SKU">
-                  <input
-                    className={inputCls}
-                    value={values.sku}
-                    onChange={(e) => update("sku", e.target.value)}
-                  />
-                </Field>
-                <Field label="Brand">
-                  <input
-                    className={inputCls}
-                    value={values.brand}
-                    onChange={(e) => update("brand", e.target.value)}
-                  />
-                </Field>
-              </div>
-            </div>
-          </section>
+    <form onSubmit={handleSubmit} className="space-y-8 border border-border bg-card p-6">
+      {/* SECTION 1: Core Details */}
+      <div className="space-y-4">
+        <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground border-b border-border pb-2 flex items-center gap-2">
+          <Package className="h-4 w-4 text-primary" /> Product Identity & Categorization
+        </h2>
 
-          <section className="border border-border bg-card p-5">
-            <h2 className="mb-4 text-sm font-bold uppercase tracking-wider">Pricing & Stock</h2>
-            <div className="grid gap-4 md:grid-cols-3">
-              <Field label="Price" required>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  className={inputCls}
-                  value={values.price}
-                  onChange={(e) => update("price", e.target.value)}
-                  required
-                />
-              </Field>
-              <Field label="Discount Price">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  className={inputCls}
-                  value={values.discountPrice}
-                  onChange={(e) => update("discountPrice", e.target.value)}
-                />
-              </Field>
-              <Field label="Stock" required>
-                <input
-                  type="number"
-                  min="0"
-                  className={inputCls}
-                  value={values.stock}
-                  onChange={(e) => update("stock", e.target.value)}
-                  required
-                />
-              </Field>
-            </div>
-          </section>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="flex flex-col gap-1 text-xs">
+            <span className="font-semibold text-muted-foreground uppercase">Product Title *</span>
+            <input
+              required
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              placeholder="e.g., Heavy Duty Photocell Sensor"
+            />
+          </label>
 
-          <section className="border border-border bg-card p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-bold uppercase tracking-wider">Specifications</h2>
+          <label className="flex flex-col gap-1 text-xs">
+            <span className="font-semibold text-muted-foreground uppercase">
+              Stock Keeping Unit (SKU) *
+            </span>
+            <input
+              required
+              type="text"
+              value={sku}
+              onChange={(e) => setSku(e.target.value)}
+              className="border border-input bg-background px-3 py-2 text-sm font-mono focus:border-primary focus:outline-none"
+              placeholder="SKU-1002"
+            />
+          </label>
+        </div>
+
+        {/* Category & Subcategory Select Row with "+ Add" Quick Action Buttons */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-muted-foreground uppercase">
+                Primary Category *
+              </span>
+              <Link
+                to="/admin/categories/create"
+                target="_blank"
+                className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-primary hover:underline"
+              >
+                <FolderPlus className="h-3 w-3" /> + Add Category
+              </Link>
+            </div>
+            <select
+              required
+              value={category}
+              onChange={(e) => {
+                setCategory(e.target.value);
+                setSubCategory("");
+              }}
+              className="border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            >
+              <option value="">Select Category</option>
+              {categories.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-muted-foreground uppercase">
+                Sub-Category (Optional)
+              </span>
+              <Link
+                to="/admin/subcategories/create"
+                target="_blank"
+                className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-primary hover:underline"
+              >
+                <FolderPlus className="h-3 w-3" /> + Add Subcategory
+              </Link>
+            </div>
+            <select
+              value={subCategory}
+              onChange={(e) => setSubCategory(e.target.value)}
+              disabled={!category || filteredSubCategories.length === 0}
+              className="border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none disabled:opacity-50"
+            >
+              <option value="">Select Sub-Category</option>
+              {filteredSubCategories.map((sc) => (
+                <option key={sc._id} value={sc._id}>
+                  {sc.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <label className="flex flex-col gap-1 text-xs">
+          <span className="font-semibold text-muted-foreground uppercase">Description *</span>
+          <textarea
+            required
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none resize-none"
+            placeholder="Comprehensive description of equipment specifications..."
+          />
+        </label>
+      </div>
+
+      {/* SECTION 2: Pricing & Inventory */}
+      <div className="space-y-4">
+        <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground border-b border-border pb-2">
+          Pricing & Inventory Matrix
+        </h2>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <label className="flex flex-col gap-1 text-xs">
+            <span className="font-semibold text-muted-foreground uppercase">
+              Base Price (INR) *
+            </span>
+            <input
+              required
+              type="number"
+              min="0"
+              step="0.01"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1 text-xs">
+            <span className="font-semibold text-muted-foreground uppercase">
+              Discounted Price (INR)
+            </span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={discountPrice}
+              onChange={(e) => setDiscountPrice(e.target.value)}
+              className="border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              placeholder="Optional sale rate"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1 text-xs">
+            <span className="font-semibold text-muted-foreground uppercase">Available Stock *</span>
+            <input
+              required
+              type="number"
+              min="0"
+              value={stock}
+              onChange={(e) => setStock(e.target.value)}
+              className="border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            />
+          </label>
+        </div>
+
+        <div className="flex items-center gap-2 pt-2">
+          <input
+            type="checkbox"
+            id="isActive"
+            checked={isActive}
+            onChange={(e) => setIsActive(e.target.checked)}
+            className="h-4 w-4 border-input accent-primary"
+          />
+          <label
+            htmlFor="isActive"
+            className="text-xs font-semibold uppercase text-foreground cursor-pointer"
+          >
+            Mark Product Active in Catalog
+          </label>
+        </div>
+      </div>
+
+      {/* SECTION 3: Shiprocket Logistics Configuration */}
+      <div className="space-y-4">
+        <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground border-b border-border pb-2 flex items-center gap-2">
+          <Truck className="h-4 w-4 text-primary" /> Shiprocket Parcel & Freight Setup
+        </h2>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="isShippable"
+            checked={isShippable}
+            onChange={(e) => setIsShippable(e.target.checked)}
+            className="h-4 w-4 border-input accent-primary"
+          />
+          <label
+            htmlFor="isShippable"
+            className="text-xs font-bold uppercase text-foreground cursor-pointer"
+          >
+            Courier Serviceable (If unchecked, forces B2B Quote Request)
+          </label>
+        </div>
+
+        {isShippable && (
+          <div className="grid gap-4 sm:grid-cols-4 bg-surface p-4 border border-border">
+            <label className="flex flex-col gap-1 text-xs">
+              <span className="font-semibold text-muted-foreground uppercase">Weight (kg) *</span>
+              <input
+                required
+                type="number"
+                step="0.01"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                className="border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1 text-xs">
+              <span className="font-semibold text-muted-foreground uppercase">Length (cm) *</span>
+              <input
+                required
+                type="number"
+                value={length}
+                onChange={(e) => setLength(e.target.value)}
+                className="border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1 text-xs">
+              <span className="font-semibold text-muted-foreground uppercase">Width (cm) *</span>
+              <input
+                required
+                type="number"
+                value={width}
+                onChange={(e) => setWidth(e.target.value)}
+                className="border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1 text-xs">
+              <span className="font-semibold text-muted-foreground uppercase">Height (cm) *</span>
+              <input
+                required
+                type="number"
+                value={height}
+                onChange={(e) => setHeight(e.target.value)}
+                className="border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
+              />
+            </label>
+          </div>
+        )}
+      </div>
+
+      {/* SECTION 4: Technical Specifications */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between border-b border-border pb-2">
+          <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground flex items-center gap-2">
+            <Layers className="h-4 w-4 text-primary" /> Technical Data Map
+          </h2>
+          <button
+            type="button"
+            onClick={() => setSpecs((prev) => [...prev, { key: "", value: "" }])}
+            className="inline-flex items-center gap-1 text-xs font-semibold uppercase text-primary hover:underline"
+          >
+            <Plus className="h-3.5 w-3.5" /> Add Attribute
+          </button>
+        </div>
+
+        <div className="space-y-2">
+          {specs.map((s, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Attribute Key (e.g. Voltage)"
+                value={s.key}
+                onChange={(e) => {
+                  const updated = [...specs];
+                  updated[index].key = e.target.value;
+                  setSpecs(updated);
+                }}
+                className="w-1/2 border border-input bg-background px-3 py-2 text-xs focus:border-primary focus:outline-none"
+              />
+              <input
+                type="text"
+                placeholder="Value (e.g. 220V AC)"
+                value={s.value}
+                onChange={(e) => {
+                  const updated = [...specs];
+                  updated[index].value = e.target.value;
+                  setSpecs(updated);
+                }}
+                className="w-1/2 border border-input bg-background px-3 py-2 text-xs focus:border-primary focus:outline-none"
+              />
               <button
                 type="button"
-                onClick={addSpec}
-                className="inline-flex items-center gap-1 border border-border px-2 py-1 text-xs font-semibold uppercase tracking-wider hover:border-primary"
+                onClick={() => setSpecs((prev) => prev.filter((_, i) => i !== index))}
+                className="p-2 text-muted-foreground hover:text-destructive transition-colors"
               >
-                <Plus className="h-3 w-3" /> Add
+                <Trash2 className="h-4 w-4" />
               </button>
             </div>
-            {values.specifications.length === 0 && (
-              <p className="text-xs text-muted-foreground">No specifications yet.</p>
-            )}
-            <div className="space-y-2">
-              {values.specifications.map((row, i) => (
-                <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2">
-                  <input
-                    placeholder="Key (e.g. Material)"
-                    className={inputCls}
-                    value={row.key}
-                    onChange={(e) => setSpec(i, { key: e.target.value })}
-                  />
-                  <input
-                    placeholder="Value"
-                    className={inputCls}
-                    value={row.value}
-                    onChange={(e) => setSpec(i, { value: e.target.value })}
+          ))}
+        </div>
+      </div>
+
+      {/* SECTION 5: Media Attachments */}
+      <div className="space-y-4">
+        <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground border-b border-border pb-2">
+          Asset Gallery & Cloudinary Files
+        </h2>
+
+        {/* Existing Images (Edit mode) */}
+        {existingImages.length > 0 && (
+          <div>
+            <div className="text-[11px] font-semibold text-muted-foreground uppercase mb-2">
+              Current Cloud Assets
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {existingImages.map((img) => (
+                <div
+                  key={img._id || img.public_id}
+                  className="relative h-20 w-20 border border-border bg-surface"
+                >
+                  <img
+                    src={img.url}
+                    alt="Product Thumbnail"
+                    className="h-full w-full object-cover"
                   />
                   <button
                     type="button"
-                    onClick={() => removeSpec(i)}
-                    className="border border-border p-2 hover:border-destructive hover:text-destructive"
-                    aria-label="Remove"
+                    onClick={() => removeExistingImage(img.public_id)}
+                    className="absolute top-1 right-1 bg-background/80 p-1 text-destructive hover:bg-background transition-colors"
+                    title="Remove image"
                   >
-                    <X className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
               ))}
             </div>
-          </section>
+          </div>
+        )}
 
-          <section className="border border-border bg-card p-5">
-            <h2 className="mb-4 text-sm font-bold uppercase tracking-wider">Images</h2>
-            {existingImages.length > 0 && (
-              <div className="mb-4">
-                <div className="mb-2 text-xs text-muted-foreground">Current images</div>
-                <div className="flex flex-wrap gap-2">
-                  {existingImages.map((img, i) => (
-                    <img
-                      key={i}
-                      src={img.url}
-                      alt=""
-                      className="h-20 w-20 border border-border object-cover"
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+        {/* Upload Dropzone */}
+        <div>
+          <label className="flex flex-col items-center justify-center border-2 border-dashed border-border bg-surface p-6 cursor-pointer hover:border-primary transition-colors">
+            <Upload className="h-6 w-6 text-muted-foreground mb-2" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Select Product Images to Upload
+            </span>
             <input
               type="file"
               multiple
               accept="image/*"
-              onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-              className="block w-full text-sm file:mr-4 file:border file:border-border file:bg-surface file:px-3 file:py-2 file:text-xs file:font-semibold file:uppercase file:tracking-wider hover:file:border-primary"
+              onChange={handleFileChange}
+              className="hidden"
             />
-            {files.length > 0 && (
-              <div className="mt-3 text-xs text-muted-foreground">
-                {files.length} file(s) selected
-              </div>
-            )}
-          </section>
+          </label>
         </div>
 
-        <aside className="space-y-6">
-          <section className="border border-border bg-card p-5">
-            <h2 className="mb-4 text-sm font-bold uppercase tracking-wider">Organization</h2>
-            <div className="grid gap-4">
-              <Field label="Category">
-                <div className="flex gap-2">
-                  <select
-                    className={inputCls}
-                    value={values.category}
-                    onChange={(e) => {
-                      update("category", e.target.value);
-                      update("subCategory", "");
-                    }}
-                  >
-                    <option value="">Select…</option>
-                    {categories.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => setCatModalOpen(true)}
-                    className="inline-flex shrink-0 items-center gap-1 border border-border px-2 text-xs font-semibold uppercase tracking-wider hover:border-primary"
-                    title="Create new category"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> New
-                  </button>
-                </div>
-              </Field>
-              <Field label="Sub-category">
-                <select
-                  className={inputCls}
-                  value={values.subCategory}
-                  onChange={(e) => update("subCategory", e.target.value)}
-                  disabled={!values.category}
-                >
-                  <option value="">
-                    {values.category ? "Select…" : "Pick a category first"}
-                  </option>
-                  {subCategories.map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Tags (comma separated)">
-                <input
-                  className={inputCls}
-                  value={values.tags}
-                  onChange={(e) => update("tags", e.target.value)}
+        {/* New Selected Image Previews */}
+        {previews.length > 0 && (
+          <div className="flex flex-wrap gap-3">
+            {previews.map((preview, i) => (
+              <div key={i} className="relative h-20 w-20 border border-border">
+                <img
+                  src={preview}
+                  alt="New Upload Preview"
+                  className="h-full w-full object-cover"
                 />
-              </Field>
-            </div>
-          </section>
-
-          <section className="border border-border bg-card p-5">
-            <h2 className="mb-4 text-sm font-bold uppercase tracking-wider">Visibility</h2>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="accent-primary"
-                checked={values.isFeatured}
-                onChange={(e) => update("isFeatured", e.target.checked)}
-              />
-              Featured
-            </label>
-            <label className="mt-3 flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="accent-primary"
-                checked={values.isActive}
-                onChange={(e) => update("isActive", e.target.checked)}
-              />
-              Active
-            </label>
-          </section>
-
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="inline-flex flex-1 items-center justify-center gap-2 bg-primary px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-            >
-              {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              {submitLabel}
-            </button>
-            {onCancel && (
-              <button
-                type="button"
-                onClick={onCancel}
-                className="border border-border px-4 py-2.5 text-xs font-semibold uppercase tracking-wider hover:border-primary"
-              >
-                Cancel
-              </button>
-            )}
+                <button
+                  type="button"
+                  onClick={() => removeSelectedFile(i)}
+                  className="absolute top-1 right-1 bg-background/80 p-1 text-destructive hover:bg-background"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
           </div>
-        </aside>
-      </form>
+        )}
+      </div>
 
-      <Dialog open={catModalOpen} onOpenChange={setCatModalOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Create Category</DialogTitle>
-          </DialogHeader>
-          <CategoryForm
-            compact
-            submitLabel="Create"
-            submitting={createCategory.isPending}
-            onCancel={() => setCatModalOpen(false)}
-            onSubmit={async (fd) => {
-              try {
-                const created = await createCategory.mutateAsync(fd);
-                toast.success("Category created");
-                setCatModalOpen(false);
-                if (created?._id) update("category", created._id);
-              } catch (e) {
-                toast.error((e as Error).message || "Failed to create category");
-              }
-            }}
-          />
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
-
-function Field({
-  label,
-  required,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {label} {required && <span className="text-destructive">*</span>}
-      </span>
-      {children}
-    </label>
+      {/* Submit Button Controls */}
+      <div className="flex justify-end pt-4 border-t border-border">
+        <button
+          type="submit"
+          disabled={isPending}
+          className="inline-flex items-center gap-2 bg-primary px-8 py-3 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        >
+          {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+          {submitLabel}
+        </button>
+      </div>
+    </form>
   );
 }

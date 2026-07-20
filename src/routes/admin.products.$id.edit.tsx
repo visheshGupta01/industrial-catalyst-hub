@@ -1,60 +1,69 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Loader2 } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { ProductForm } from "@/components/admin/ProductForm";
 import { useProduct } from "@/hooks/useProducts";
 import { useUpdateProduct } from "@/hooks/useAdminProducts";
-import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin/products/$id/edit")({
-  head: () => ({ meta: [{ title: "Edit Product — Admin" }] }),
+  head: ({ params }) => ({ meta: [{ title: `Edit Product ${params.id} — Admin` }] }),
   component: EditProductPage,
 });
 
 function EditProductPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-  const { data: product, isLoading, error } = useProduct(id);
+
+  const { data: product, isLoading, isError } = useProduct(id);
   const updateProduct = useUpdateProduct();
 
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex h-64 items-center justify-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          Loading product record...
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (isError || !product) {
+    return (
+      <AdminLayout>
+        <div className="p-8 text-center text-destructive">
+          Failed to fetch product record. Please refresh.
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  const handleUpdate = async (formData: FormData) => {
+    try {
+      await updateProduct.mutateAsync({ id, formData });
+      navigate({ to: "/admin/products" });
+    } catch (err) {
+      // Errors handled in hook toast notification
+    }
+  };
+
   return (
-    <AdminLayout
-      title="Edit Product"
-      subtitle={product?.name ?? "Update product details"}
-      actions={
-        <button
-          onClick={() => navigate({ to: "/admin/products" })}
-          className="inline-flex items-center gap-1.5 border border-border bg-card px-3 py-2 text-xs font-semibold uppercase tracking-wider hover:border-primary"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" /> Back
-        </button>
-      }
-    >
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20 text-muted-foreground">
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading product…
+    <AdminLayout>
+      <div className="max-w-4xl space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Edit SKU: {product.sku}</h1>
+          <p className="text-xs text-muted-foreground mt-1">
+            Modify product parameters, update logistics dimensions, or alter inventory counts.
+          </p>
         </div>
-      ) : error || !product ? (
-        <div className="border border-destructive/40 bg-destructive/5 p-6 text-sm text-destructive">
-          Failed to load product.
-        </div>
-      ) : (
+
         <ProductForm
-          initial={product}
-          submitLabel="Save Changes"
-          submitting={updateProduct.isPending}
-          onCancel={() => navigate({ to: "/admin/products" })}
-          onSubmit={async (fd) => {
-            try {
-              await updateProduct.mutateAsync({ id, data: fd });
-              toast.success("Product updated");
-              navigate({ to: "/admin/products" });
-            } catch (e) {
-              toast.error((e as Error).message || "Failed to update product");
-            }
-          }}
+          initialData={product}
+          onSubmit={handleUpdate}
+          isPending={updateProduct.isPending}
+          submitLabel="Update Product"
         />
-      )}
+      </div>
     </AdminLayout>
   );
 }
